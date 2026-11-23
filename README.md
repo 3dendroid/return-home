@@ -8,9 +8,9 @@ A small atmospheric browser game. It is a winter night in a Siberian village, an
 
 ## Story
 
-A winter evening, around ten o'clock. You walk from Verkhneusinskoye to Nizhneusinskoye, two real villages on the Us river in Krasnoyarsk Krai. It is dark and freezing, and it is best if nobody sees you on the way.
+A winter evening, around ten o'clock. You walk from Verkhneusinskoye to Nizhneusinskoye, two real villages on the Us river in Krasnoyarsk Krai. It is dark and freezing, and it is best if nobody sees you on the way. Home is the house with a green roof and two lit windows, in the far north-east corner of Nizhneusinskoye.
 
-The map follows the real route on Google Maps: out of Verkhneusinskoye to the north-west, over a side channel, across the floodplain, over the Us, north through the forest, over the last channel and into Nizhneusinskoye.
+The map follows the real route on Google Maps: out of Verkhneusinskoye to the north-west, over a side channel, across the floodplain, over the Us, north through the forest, over the last channel and through the streets of Nizhneusinskoye to the far side of the village.
 
 ![Gameplay](docs/gameplay.png)
 
@@ -32,8 +32,15 @@ You only see what is inside your lantern's circle of light. Lit windows, other p
 - **Dogs** sit in village yards. They hear footsteps nearby and running from far away, then chase and bark.
 - **Wolves** roam the forest and the floodplain. You only see their eyes. They are faster than walking but slower than running.
 - **Grown-ups with lanterns** patrol village streets. Step into the beam and you are caught.
+- **Rivers.** Walk into the water and you drown. Bridges have railings, so you cannot fall off them.
 
-Enemies are placed randomly on every run. Bridges are checkpoints: if you lose, you go back to the last bridge you crossed.
+Enemies are placed randomly on every run.
+
+## Secrets
+
+Five things are hidden off the road, one in each part of the map: a mitten, a sled, a cedar cone, a coin and a whistle. A faint sparkle gives one away when you are close. The count is shown in the HUD and on the win screen.
+
+The river is audible only near the water, and footsteps crunch on snow and knock on bridge planks. Bridges are checkpoints: if you lose, you go back to the last bridge you crossed.
 
 ## Difficulty
 
@@ -52,7 +59,7 @@ Your best times are saved in the browser (`localStorage`), per difficulty. The c
 
 - Plain HTML, CSS and JavaScript, no frameworks, no build step, no image or audio files.
 - Rendering: Canvas 2D, top-down, with a radial "darkness" mask around the player.
-- Sound: everything is synthesized with the Web Audio API — wind, music, barking, howling, the chase theme, win and lose tunes.
+- Sound: everything is synthesized with the Web Audio API — the river, footsteps in the snow, menu music, barking, howling, the chase theme, win and lose tunes.
 - Languages: Russian and English, switchable in the menu.
 
 ```
@@ -75,8 +82,8 @@ Opening `index.html` directly from disk also works.
 
 ![Map overview](docs/map.png)
 
-*Map overview without darkness: start (blue), bridges (orange), home (green); red, orange and yellow mark one random set of wolves, dogs and lantern patrols.*
+*Map overview without darkness: start (blue circle), bridges (orange), home (green frame), secrets (purple); red, orange and yellow mark one random set of wolves, dogs and lantern patrols.*
 
 ---
 
-**RU.** Атмосферная браузерная игра: зимняя ночь, полная темнота, путь пешком из Верхнеусинского в Нижнеусинское (Красноярский край) через три моста. Мешают холод, собаки, волки и взрослые с фонарями. Карта повторяет реальный маршрут. Есть три уровня сложности, доска почёта, русский и английский язык.
+**RU.** Атмосферная браузерная игра: зимняя ночь, полная темнота, путь пешком из Верхнеусинского в Нижнеусинское (Красноярский край) через три моста. Мешают холод, собаки, волки, взрослые с фонарями и река. По пути спрятаны пять секретов. Карта повторяет реальный маршрут. Есть три уровня сложности, доска почёта, русский и английский язык.
