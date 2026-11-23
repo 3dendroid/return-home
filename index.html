@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дорога домой · Return Home</title>
+<meta name="description" content="Атмосферная браузерная игра: зимняя ночь, полная темнота, путь из Верхнеусинского в Нижнеусинское через три моста.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud" hidden></div>
+<button id="snd">Звук: выкл</button>
+<div id="msg"></div>
+<div id="hint" hidden></div>
+<div id="menu">
+  <div class="card">
+    <div>
+      <h1 data-t="title"></h1>
+      <p class="sub" data-t="story"></p>
+      <label for="nick" data-t="nickLabel"></label>
+      <input id="nick" maxlength="16" autocomplete="off">
+      <label data-t="diffLabel"></label>
+      <div class="diffs" id="diffs"></div>
+      <button id="resume" class="big" data-t="resume" hidden></button>
+      <button id="go" class="big" data-t="start"></button>
+      <div class="keys" data-t="keys"></div>
+    </div>
+    <div>
+      <div id="lang"><button data-l="ru">RU</button><button data-l="en">EN</button></div>
+      <h2 data-t="board"></h2>
+      <div id="src"></div>
+      <table id="board"></table>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
