@@ -4,7 +4,7 @@ A small atmospheric browser game based on a real childhood memory. It is a winte
 
 **Play:** https://3dendroid.github.io/return-home/ (desktop and phone)
 
-![Main menu](docs/menu.png)
+![Main menu](docs/screen-menu.png)
 
 ## Story
 
@@ -32,7 +32,7 @@ The story is told in short scenes with captions. The pictures are illustrations 
 
 Click or press Space to go to the next scene, Esc to skip.
 
-![Gameplay](docs/gameplay.png)
+![Gameplay](docs/screen-gameplay.png)
 
 ## How to play
 
