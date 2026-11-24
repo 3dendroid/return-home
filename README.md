@@ -85,6 +85,14 @@ Barking, howling, gunshots and the motorbike come from the left or right, so you
 | Hunters (beam range, aim time) | 2 (250, 1.3 s) | 3 (300, 1 s) | 5 (350, 0.75 s) |
 | Thermoses | 5 | 3 | 1 |
 
+## Feedback
+
+**Leave feedback:** https://3dendroid.github.io/return-home/feedback.html (also linked from the game menu)
+
+Anyone can report a bug, suggest an idea or share impressions, no account needed. All feedback is public and works like a small issue tracker: each item shows its status (New, In progress, Done, Rejected) and the developer's reply. Only the developer can change statuses and reply, from the same page after signing in.
+
+Feedback is stored in Supabase (Postgres). Access rules live in the database itself (row-level security): anyone can read and submit, only the admin account can update status and reply, and nobody can delete. Simple spam protection: a hidden honeypot field, one message per minute per browser, and at most 10 messages per minute for the whole site.
+
 ## Leaderboard
 
 Your best times are saved in the browser (`localStorage`), per difficulty. The copy of the game published as a claude.ai artifact also has a shared board for everyone it is shared with; on GitHub Pages the board is local to your device.
@@ -102,6 +110,7 @@ index.html   page markup and menu
 style.css    menu, HUD and cutscene styles
 game.js      map, enemies, audio, rendering, cutscenes, menu and leaderboard
 sounds.js    recorded sounds (base64 MP3)
+feedback.html  feedback page and tracker (Supabase)
 images.js    cutscene illustrations (base64 WebP)
 docs/        screenshots and the map overview
 ```
@@ -123,4 +132,4 @@ Opening `index.html` directly from disk also works.
 
 ---
 
-**RU.** Атмосферная браузерная игра по детскому воспоминанию. Зимняя ночь, полная темнота: пятилетний мальчик сбегает от тёти и идёт к бабушке из Верхнеусинского в Нижнеусинское (Красноярский край) через три моста. Мешают холод, собаки, волки, взрослые с фонарями, охотники, дядя на мотоцикле и река. Помогают фонарь, чутьё и термосы с горячим чаем. По пути спрятаны пять секретов, за все пять — дополнительная сцена в финале. Карта повторяет реальный маршрут. Есть заставки с иллюстрациями, подсказки для новичков, три уровня сложности, доска почёта, управление на телефоне, русский и английский язык.
+**RU.** Атмосферная браузерная игра по детскому воспоминанию. Зимняя ночь, полная темнота: пятилетний мальчик сбегает от тёти и идёт к бабушке из Верхнеусинского в Нижнеусинское (Красноярский край) через три моста. Мешают холод, собаки, волки, взрослые с фонарями, охотники, дядя на мотоцикле и река. Помогают фонарь, чутьё и термосы с горячим чаем. По пути спрятаны пять секретов, за все пять — дополнительная сцена в финале. Карта повторяет реальный маршрут. Есть заставки с иллюстрациями, подсказки для новичков, страница отзывов и багов, три уровня сложности, доска почёта, управление на телефоне, русский и английский язык.

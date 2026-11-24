@@ -20,6 +20,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #hint{position:fixed;left:0;right:0;bottom:14px;text-align:center;opacity:.55;pointer-events:none;padding:0 12px}
 #msg b{display:block;font-size:36px;font-weight:600;margin-bottom:6px}
 #msg em{display:block;font-style:normal;color:#ffcc66;margin-top:6px}
+.fb-link{display:inline-block;margin-top:10px;color:#ffb547;font-size:14px}
 #tip{position:fixed;left:50%;bottom:64px;transform:translate(-50%,8px);max-width:min(520px,calc(100% - 32px));background:rgba(12,16,26,.82);border:1px solid rgba(255,204,102,.35);border-radius:12px;padding:10px 16px;font-size:16px;line-height:1.35;text-align:center;color:#eef2f7;pointer-events:none;opacity:0;transition:opacity .5s,transform .5s;z-index:5}
 #tip.on{opacity:1;transform:translate(-50%,0)}
 #tip b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#ffcc66;margin-bottom:2px}

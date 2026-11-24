@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Return Home — отзывы и баги</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #070a12; --card: #0f1420; --line: #222a3a; --text: #e8edf5; --dim: #8c96a8; --accent: #ffb547;
+          --bug: #ff6b5e; --idea: #6fb6ff; --impr: #c58bff; --new: #8c96a8; --prog: #ffb547; --done: #5fd38a; --rej: #6b7280; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(ellipse at top, #121a2c, var(--bg) 60%); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; min-height: 100vh; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font: 700 34px/1.1 'PT Serif', Georgia, serif; margin: 0; }
+  h2 { font: 700 22px/1.2 'PT Serif', Georgia, serif; margin: 0 0 12px; }
+  a { color: var(--accent); }
+  .sub { color: var(--dim); margin: 8px 0 24px; }
+  .lang button, .pill, .tab { background: #161c2a; color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+  .lang button.on, .pill.on, .tab.on { border-color: var(--accent); background: #2a2214; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 20px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  label { display: block; color: var(--dim); font-size: 13px; margin: 0 0 6px; }
+  textarea, input[type=text], input[type=email], input[type=password], select {
+    width: 100%; background: #0a0e18; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; }
+  textarea { min-height: 110px; resize: vertical; }
+  textarea:focus, input:focus, select:focus { outline: 2px solid #3a3020; border-color: var(--accent); }
+  .counter { text-align: right; color: var(--dim); font-size: 12px; margin-top: 4px; }
+  .btn { background: var(--accent); color: #1b1408; border: 0; border-radius: 12px; padding: 11px 20px; font: 600 15px Inter, sans-serif; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .msg { margin-top: 10px; font-size: 14px; min-height: 1.2em; }
+  .msg.ok { color: var(--done); } .msg.err { color: var(--bug); }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }   /* ловушка для ботов */
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--dim); margin-bottom: 8px; }
+  .badge { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
+  .k-bug { color: var(--bug); } .k-idea { color: var(--idea); } .k-impression { color: var(--impr); }
+  .s-new { color: var(--new); } .s-in_progress { color: var(--prog); } .s-done { color: var(--done); } .s-rejected { color: var(--rej); }
+  .text { white-space: pre-wrap; word-wrap: break-word; }
+  .reply { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--accent); background: #161c2a; border-radius: 0 10px 10px 0; white-space: pre-wrap; }
+  .reply b { display: block; font-size: 12px; color: var(--accent); margin-bottom: 2px; }
+  .admin-edit { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; gap: 8px; }
+  .admin-edit .line { display: flex; gap: 8px; align-items: center; }
+  .admin-edit select { width: auto; }
+  .empty { color: var(--dim); text-align: center; padding: 24px; }
+  footer { margin-top: 30px; color: var(--dim); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  footer button { background: none; border: 0; color: var(--dim); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+  dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 16px; padding: 20px; width: min(380px, 92vw); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog .line { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .stack > * + * { margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 data-t="title"></h1>
+    <div class="lang"><button data-l="ru">RU</button> <button data-l="en">EN</button></div>
+  </header>
+  <p class="sub"><span data-t="sub"></span> <a href="./" data-t="back"></a></p>
+
+  <section class="card">
+    <h2 data-t="formTitle"></h2>
+    <form id="form" autocomplete="off">
+      <label data-t="kindLabel"></label>
+      <div class="row" id="kinds"></div>
+      <label for="message" data-t="msgLabel"></label>
+      <textarea id="message" maxlength="2000" required></textarea>
+      <div class="counter"><span id="count">0</span> / 2000</div>
+      <div class="stack">
+        <div><label for="author" data-t="nameLabel"></label><input id="author" type="text" maxlength="40"></div>
+        <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" type="text" tabindex="-1" autocomplete="off"></div>
+        <button class="btn" id="send" type="submit" data-t="send"></button>
+      </div>
+      <div class="msg" id="formMsg" role="status"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2 data-t="listTitle"></h2>
+    <div class="filters" id="statusTabs"></div>
+    <div id="list"><div class="empty" data-t="loading"></div></div>
+  </section>
+
+  <footer>
+    <span id="who"></span>
+    <span><button id="adminBtn" type="button"></button></span>
+  </footer>
+</div>
+
+<dialog id="login">
+  <form id="loginForm" method="dialog" class="stack">
+    <h2 data-t="loginTitle"></h2>
+    <div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div>
+    <div><label for="password" data-t="password"></label><input id="password" type="password" required autocomplete="current-password"></div>
+    <div class="msg err" id="loginMsg"></div>
+    <div class="line"><button class="btn ghost" type="button" id="loginCancel" data-t="cancel"></button><button class="btn" type="submit" data-t="signIn"></button></div>
+  </form>
+</dialog>
+
+<script>
+{
+// Supabase: адрес проекта и публичный ключ (его можно держать в коде страницы — права проверяет сама база, политики RLS)
+const SB_URL = 'https://nrhlwdpupbjyymcwhvzk.supabase.co';
+const SB_KEY = 'sb_publishable_biRtvkRAMrI0dFcBx-KNFg_ux2eMGDf';
+const COOLDOWN = 60 * 1000;                       // не чаще одного отзыва в минуту с одного браузера
+
+const T = {
+  ru: { title: 'Отзывы и баги', sub: 'Нашёл баг, есть идея или просто хочешь рассказать о впечатлениях? Пиши — я читаю всё и отмечаю здесь, что взял в работу.',
+        back: '← Вернуться в игру', formTitle: 'Оставить отзыв', kindLabel: 'Что это?', msgLabel: 'Сообщение',
+        nameLabel: 'Имя (необязательно)', send: 'Отправить', listTitle: 'Все отзывы', loading: 'Загружаю…',
+        empty: 'Здесь пока пусто. Будь первым!', loadErr: 'Не удалось загрузить отзывы. Попробуй обновить страницу.',
+        sent: 'Спасибо! Отзыв появился в списке ниже.', tooShort: 'Напиши хотя бы пару слов.', wait: 'Подожди немного перед следующим отзывом.',
+        tooMany: 'Сейчас слишком много отзывов, попробуй через минуту.', sendErr: 'Не получилось отправить. Попробуй ещё раз.',
+        kinds: {bug: 'Баг', idea: 'Идея', impression: 'Впечатление'},
+        statuses: {all: 'Все', new: 'Новый', in_progress: 'В работе', done: 'Готово', rejected: 'Отклонено'},
+        anon: 'Аноним', reply: 'Ответ разработчика', replyPh: 'Ответ (необязательно)', save: 'Сохранить', saved: 'Сохранено',
+        saveErr: 'Не сохранилось. Возможно, сессия истекла — войди снова.',
+        admin: 'Вход для разработчика', logout: 'Выйти', adminAs: 'Режим разработчика: ', loginTitle: 'Вход для разработчика',
+        password: 'Пароль', cancel: 'Отмена', signIn: 'Войти', loginErr: 'Неверная почта или пароль.' },
+  en: { title: 'Feedback & bugs', sub: 'Found a bug, have an idea, or just want to share your impressions? Write it here — I read everything and mark what I am working on.',
+        back: '← Back to the game', formTitle: 'Leave feedback', kindLabel: 'What is it?', msgLabel: 'Message',
+        nameLabel: 'Name (optional)', send: 'Send', listTitle: 'All feedback', loading: 'Loading…',
+        empty: 'Nothing here yet. Be the first!', loadErr: 'Could not load feedback. Try reloading the page.',
+        sent: 'Thank you! Your feedback is in the list below.', tooShort: 'Please write at least a few words.', wait: 'Please wait a bit before sending more.',
+        tooMany: 'Too many messages right now, try again in a minute.', sendErr: 'Could not send. Please try again.',
+        kinds: {bug: 'Bug', idea: 'Idea', impression: 'Impression'},
+        statuses: {all: 'All', new: 'New', in_progress: 'In progress', done: 'Done', rejected: 'Rejected'},
+        anon: 'Anonymous', reply: 'Developer reply', replyPh: 'Reply (optional)', save: 'Save', saved: 'Saved',
+        saveErr: 'Not saved. Your session may have expired — sign in again.',
+        admin: 'Developer sign-in', logout: 'Sign out', adminAs: 'Developer mode: ', loginTitle: 'Developer sign-in',
+        password: 'Password', cancel: 'Cancel', signIn: 'Sign in', loginErr: 'Wrong email or password.' },
+};
+const ls = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }};
+const ss = {get: k => { try { return JSON.parse(sessionStorage.getItem(k)); } catch (e) { return null; } },
+            set: (k, v) => { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }};
+let lang = ls.get('tma_lang') || (/^(ru|uk|be|kk)/i.test(navigator.language || '') ? 'ru' : 'en');   // тот же язык, что в игре
+const t = k => T[lang][k];
+const $ = id => document.getElementById(id);
+let kind = 'bug', filter = 'all', items = [], session = ss.get('fb_session');
+
+// --- запросы к Supabase: REST (PostgREST) и Auth без сторонних библиотек
+const api = async (path, opts = {}, auth = false) => {
+  const headers = {apikey: SB_KEY, 'Content-Type': 'application/json', ...(opts.headers || {})};
+  if (auth && session) headers.Authorization = 'Bearer ' + session.access_token;
+  const r = await fetch(SB_URL + path, {...opts, headers});
+  const body = r.status === 204 ? null : await r.json().catch(() => null);
+  if (!r.ok) { const e = new Error((body && (body.message || body.msg || body.error_description)) || r.statusText); e.status = r.status; throw e; }
+  return body;
+};
+const saveSession = d => { session = d ? {access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + d.expires_in * 1000, email: d.user && d.user.email} : null; ss.set('fb_session', session); };
+const freshSession = async () => {                // токен живёт час — обновляем заранее
+  if (!session) return false;
+  if (Date.now() < session.expires_at - 60000) return true;
+  try { saveSession(await api('/auth/v1/token?grant_type=refresh_token', {method: 'POST', body: JSON.stringify({refresh_token: session.refresh_token})})); return true; }
+  catch (e) { saveSession(null); return false; }
+};
+
+// --- отрисовка (весь текст от пользователей — только через textContent, без HTML)
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+const fmtDate = s => new Date(s).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+const renderStatic = () => {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(n => { n.textContent = t(n.dataset.t); });
+  let nick = ''; try { nick = JSON.parse(ls.get('tma_nick')) || ''; } catch (e) {}   // имя игрока из игры — подсказкой в поле
+  $('author').placeholder = typeof nick === 'string' ? nick : '';
+  document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+  const kinds = $('kinds'); kinds.textContent = '';
+  for (const k of ['bug', 'idea', 'impression']) {
+    const b = el('button', 'pill' + (k === kind ? ' on' : ''), t('kinds')[k]); b.type = 'button';
+    b.onclick = () => { kind = k; renderStatic(); }; kinds.append(b);
+  }
+  const tabs = $('statusTabs'); tabs.textContent = '';
+  for (const s of ['all', 'new', 'in_progress', 'done', 'rejected']) {
+    const n = s === 'all' ? items.length : items.filter(i => i.status === s).length;
+    const b = el('button', 'tab' + (s === filter ? ' on' : ''), `${t('statuses')[s]} · ${n}`); b.type = 'button';
+    b.onclick = () => { filter = s; renderStatic(); renderList(); }; tabs.append(b);
+  }
+  $('adminBtn').textContent = session ? t('logout') : t('admin');
+  $('who').textContent = session ? t('adminAs') + session.email : '';
+};
+const renderList = () => {
+  const list = $('list'); list.textContent = '';
+  const shown = items.filter(i => filter === 'all' || i.status === filter);
+  if (!shown.length) { list.append(el('div', 'empty', t('empty'))); return; }
+  for (const i of shown) {
+    const card = el('article', 'item'), meta = el('div', 'meta');
+    meta.append(el('span', 'badge k-' + i.kind, t('kinds')[i.kind] || i.kind), el('span', 'badge s-' + i.status, t('statuses')[i.status] || i.status),
+                el('span', '', `#${i.id} · ${i.author || t('anon')} · ${fmtDate(i.created_at)}`));
+    card.append(meta, el('div', 'text', i.message));
+    if (i.reply) { const r = el('div', 'reply'); r.append(el('b', '', t('reply')), document.createTextNode(i.reply)); card.append(r); }
+    if (session) card.append(adminEditor(i));
+    list.append(card);
+  }
+};
+const adminEditor = i => {                        // разработчик: сменить статус и ответить прямо на карточке
+  const box = el('div', 'admin-edit'), line = el('div', 'line'), sel = el('select'), rep = el('textarea'), save = el('button', 'btn', t('save')), note = el('span', 'msg');
+  for (const s of ['new', 'in_progress', 'done', 'rejected']) { const o = el('option', '', t('statuses')[s]); o.value = s; o.selected = s === i.status; sel.append(o); }
+  rep.value = i.reply || ''; rep.placeholder = t('replyPh'); rep.maxLength = 2000; rep.style.minHeight = '60px'; save.type = 'button';
+  save.onclick = async () => {
+    save.disabled = true; note.className = 'msg'; note.textContent = '';
+    try {
+      if (!await freshSession()) throw new Error('auth');
+      const rows = await api(`/rest/v1/feedback?id=eq.${i.id}`, {method: 'PATCH', headers: {Prefer: 'return=representation'},
+        body: JSON.stringify({status: sel.value, reply: rep.value.trim() || null})}, true);
+      if (!rows || !rows.length) throw new Error('denied');   // политика не пустила — ни одна строка не изменилась
+      Object.assign(i, rows[0]); note.className = 'msg ok'; note.textContent = t('saved');
+      setTimeout(() => { renderStatic(); renderList(); }, 600);
+    } catch (e) { note.className = 'msg err'; note.textContent = t('saveErr'); if (e.message === 'auth') renderStatic(); }
+    save.disabled = false;
+  };
+  line.append(sel, save, note); box.append(line, rep);
+  return box;
+};
+const load = async () => {
+  try { items = await api('/rest/v1/feedback?select=*&order=created_at.desc&limit=500'); }
+  catch (e) { $('list').textContent = ''; $('list').append(el('div', 'empty', t('loadErr'))); return; }
+  renderStatic(); renderList();
+};
+
+// --- отправка отзыва
+$('message').addEventListener('input', () => { $('count').textContent = $('message').value.length; });
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = $('formMsg'), text = $('message').value.trim(), author = $('author').value.trim() || $('author').placeholder.trim();
+  msg.className = 'msg';
+  if ($('website').value) { $('message').value = ''; $('count').textContent = '0'; msg.className = 'msg ok'; msg.textContent = t('sent'); return; }   // бот заполнил ловушку — делаем вид, что всё хорошо
+  if (text.length < 3) { msg.className = 'msg err'; msg.textContent = t('tooShort'); return; }
+  const last = +ls.get('fb_last') || 0;
+  if (Date.now() - last < COOLDOWN) { msg.className = 'msg err'; msg.textContent = t('wait'); return; }
+  $('send').disabled = true;
+  try {
+    await api('/rest/v1/feedback', {method: 'POST', headers: {Prefer: 'return=minimal'}, body: JSON.stringify({kind, message: text, author: author || null})});
+    ls.set('fb_last', String(Date.now())); $('message').value = ''; $('count').textContent = '0';
+    msg.className = 'msg ok'; msg.textContent = t('sent'); filter = 'all'; await load();
+  } catch (err) {
+    msg.className = 'msg err'; msg.textContent = /too many/i.test(err.message) ? t('tooMany') : t('sendErr');
+  }
+  $('send').disabled = false;
+});
+
+// --- вход и выход разработчика
+$('adminBtn').onclick = () => { if (session) { saveSession(null); renderStatic(); renderList(); } else { $('loginMsg').textContent = ''; $('login').showModal(); } };
+$('loginCancel').onclick = () => $('login').close();
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    saveSession(await api('/auth/v1/token?grant_type=password', {method: 'POST', body: JSON.stringify({email: $('email').value.trim(), password: $('password').value})}));
+    $('password').value = ''; $('login').close(); renderStatic(); renderList();
+  } catch (err) { $('loginMsg').textContent = t('loginErr'); }
+});
+
+document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { lang = b.dataset.l; ls.set('tma_lang', lang); renderStatic(); renderList(); });
+renderStatic(); freshSession().then(load);
+}
+</script>
+</body>
+</html>
