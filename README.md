@@ -2,7 +2,8 @@
 
 A small atmospheric browser game based on a real childhood memory. It is a winter night in a Siberian village, and a five-year-old boy has to walk to his grandmother's house in total darkness, across three bridges, without being caught.
 
-**Play:** https://3dendroid.github.io/return-home/ (desktop and phone)
+**Play:** https://3dendroid.github.io/return-home/ (desktop and phone)  
+**Feedback & bugs:** https://3dendroid.github.io/return-home/feedback.html
 
 ![Main menu](docs/screen-menu.png)
 
@@ -92,6 +93,8 @@ Barking, howling, gunshots and the motorbike come from the left or right, so you
 Anyone can report a bug, suggest an idea or share impressions, no account needed. All feedback is public and works like a small issue tracker: each item shows its status (New, In progress, Done, Rejected) and the developer's reply. Only the developer can change statuses and reply, from the same page after signing in.
 
 Feedback is stored in Supabase (Postgres). Access rules live in the database itself (row-level security): anyone can read and submit, only the admin account can update status and reply, and nobody can delete. Simple spam protection: a hidden honeypot field, one message per minute per browser, and at most 10 messages per minute for the whole site.
+
+![Feedback page](docs/screen-feedback.png)
 
 ## Leaderboard
 
