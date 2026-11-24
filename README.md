@@ -32,7 +32,7 @@ The story is told in short scenes with captions. The pictures are illustrations 
 
 Click or press Space to go to the next scene, Esc to skip.
 
-![Gameplay](docs/screen-gameplay.png)
+![Gameplay](docs/screen-play.png)
 
 ## How to play
 
