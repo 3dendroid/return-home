@@ -16,7 +16,7 @@ The map follows the real route on Google Maps: out of Verkhneusinskoye to the no
 
 ## Story scenes
 
-The cutscenes are drawn as silhouettes against warm light, with layered parallax, snow and slow camera moves. The game opens with four short scenes: ten to ten at his aunt's house, the boy at the window missing his grandmother; the locked door; from outside, he breaks the glass, climbs out and runs off barefoot; then darkness closes in around him. It ends at grandma's green-roofed house: her silhouette with a mug in the lit window, then the door creaks open and she stands on the porch with open arms. Click or press Space to advance, Esc to skip.
+The cutscenes are painted illustrations generated locally in ComfyUI with Qwen-Image 2.1 from our prompts, brought to life in code: slow camera moves, falling snow, flickering fire and lamps, window glow and steam. Each scene has its own sounds: crackling stove and a ticking clock at the aunt's, the latch rattling, breaking glass and running steps, wind, a distant dog, the door creak and steps on the wooden porch. The game opens with four short scenes: ten to ten at his aunt's house, the boy at the window missing his grandmother; the locked door; from outside, he breaks the glass, climbs out and runs off barefoot; then he walks down the village street at night, and darkness closes in around him. It ends at grandma's green-roofed house: her silhouette with a mug in the lit window, then the door creaks open and she stands on the porch with open arms. Click or press Space to advance, Esc to skip.
 
 ## How to play
 
@@ -74,7 +74,7 @@ Your best times are saved in the browser (`localStorage`), per difficulty. The c
 
 ## Tech
 
-- Plain HTML, CSS and JavaScript, no frameworks, no build step, no image files. Recorded sounds (footsteps, bridge planks, gunshot, breaking glass, motorbike engine) are embedded in `sounds.js` as base64 MP3.
+- Plain HTML, CSS and JavaScript, no frameworks, no build step. Cutscene images are embedded in `images.js` as base64 WebP. Recorded sounds (footsteps, bridge planks, gunshot, breaking glass, motorbike engine) are embedded in `sounds.js` as base64 MP3.
 - Rendering: Canvas 2D, top-down. Darkness is a mask with a small circle around the boy and a flashlight beam where he faces; houses cast shadows for every lantern. On slow devices the game switches to lighter graphics by itself.
 - Sound: Web Audio API. The recordings above are mixed with synthesized sounds: the river, menu music, barking, howling, the "Hey!" call, the chase theme, win and lose tunes.
 - Languages: Russian and English, switchable in the menu.

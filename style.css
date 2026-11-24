@@ -79,6 +79,7 @@ body.touch #msg{padding-bottom:250px}   /* сообщения не заходя�
 body.cine #cine{display:block}
 body.cine #hud,body.cine #task,body.cine #hint,body.cine #joy,body.cine #runBtn,body.cine #pauseBtn,body.cine #lampBtn,body.cine #senseBtn,body.cine #snd{display:none!important}
 #cineText{position:absolute;left:50%;bottom:max(48px,8vh);transform:translateX(-50%);width:min(680px,calc(100vw - 32px));margin:0;text-align:center;font:500 clamp(18px,2.6vw,26px)/1.4 'PT Serif',Georgia,serif;color:#f3ead8;text-shadow:0 2px 12px rgba(0,0,0,.8);background:rgba(8,10,16,.55);padding:10px 18px;border-radius:12px;box-sizing:border-box;transition:opacity .3s;text-wrap:balance}
+@media (min-aspect-ratio:5/4){#cineText{bottom:auto;top:max(20px,3vh);width:min(620px,calc(100vw - 260px))}#cineText.low{left:max(20px,2vw);transform:none;width:min(420px,40vw)}}   /* горизонтальный экран: подпись сверху, не закрывает героев */
 #cineSkip{position:absolute;right:14px;top:12px;min-height:44px;padding:0 16px;background:rgba(0,0,0,.35);color:#e8eef5;border:1px solid rgba(255,255,255,.25);border-radius:8px;font:14px system-ui,sans-serif;cursor:pointer}
 /* телефон: фонарь, чутьё — колонкой над кнопкой бега */
 #lampBtn,#senseBtn{display:none}

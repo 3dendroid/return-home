@@ -48,7 +48,7 @@ const T = {
     c1: 'Верхнеусинское, дом тёти. Без десяти десять. Бабушка — в Нижнеусинском, за тремя мостами, и он очень по ней скучает.',
     c2: 'Дверь заперта. Но он уже всё решил.',
     c3: 'Он разбивает стекло, вылезает в окно и бежит — босиком, прямо по снегу.',
-    c4: 'Ночь, мороз. До бабушки почти три километра.',
+    c4: 'Ночь, мороз. До бабушки почти три километра.', c5: 'Главное — чтобы взрослые не заметили.',
     o1: 'Нижнеусинское. Зелёная крыша, в окне свет — бабушка не спит.', o3: 'У печки он раскладывает свои находки: варежку, санки, шишку, монетку и свисток. Бабушка гладит его по голове.', o2: 'Скрипит дверь. На пороге бабушка. Он дома.', skip: 'Пропустить ›',
     lampOn: 'Фонарь включён', lampOff: 'Фонарь выключен: тебя хуже видно, но ты быстрее мёрзнешь', lampOffShort: 'без фонаря',
     senseWait: 'Чутьё ещё не вернулось — подожди', senseItem: 'Чутьё: секрет где-то там', senseRoad: 'Чутьё: домой — туда', senseShort: 'чутьё', lampBtn: 'Фонарь', senseBtn: 'Чутьё',
@@ -92,7 +92,7 @@ const T = {
     c1: 'Verkhneusinskoye, his aunt\'s house. Ten to ten. Grandma lives in Nizhneusinskoye, three bridges away, and he misses her badly.',
     c2: 'The door is locked. But his mind is made up.',
     c3: 'He breaks the glass, climbs out of the window and runs — barefoot, straight through the snow.',
-    c4: 'Night and frost. Almost three kilometres to Grandma\'s.',
+    c4: 'Night and frost. Almost three kilometres to Grandma\'s.', c5: 'Just don\'t let the grown-ups see you.',
     o1: 'Nizhneusinskoye. A green roof and a lit window — Grandma is still up.', o3: 'By the stove he lays out everything he found: a mitten, a sled, a cone, a coin and a whistle. Grandma strokes his hair.', o2: 'The door creaks. Grandma is in the doorway. He is home.', skip: 'Skip ›',
     lampOn: 'Flashlight on', lampOff: 'Flashlight off: harder to spot, but you freeze faster', lampOffShort: 'no light',
     senseWait: 'Your sense isn\'t back yet — wait', senseItem: 'Sense: a secret is that way', senseRoad: 'Sense: home is that way', senseShort: 'sense', lampBtn: 'Light', senseBtn: 'Sense',
@@ -730,6 +730,43 @@ const glassBreak = () => {                      // разбитое стекло
     o.connect(og); og.connect(master); o.start(t + d); o.stop(t + d + .3);
   }
 };
+// --- звуки заставок: треск дров, ходики, ветер
+const crackle = (v = .18) => {                  // щелчок полена в печи: короткий шумовой импульс
+  if (!ac) return;
+  const t = ac.currentTime, n = 1 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) {
+    const d = t + i * (.015 + Math.random() * .03), s = ac.createBufferSource(), bf = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noiseBuf; bf.type = 'bandpass'; bf.frequency.value = 1800 + Math.random() * 2500; bf.Q.value = 1.5;
+    const a = v * (.4 + Math.random() * .6);
+    g.gain.setValueAtTime(0, d); g.gain.linearRampToValueAtTime(a, d + .002); g.gain.exponentialRampToValueAtTime(.001, d + .03 + Math.random() * .04);
+    s.connect(bf); bf.connect(g); g.connect(gameG); s.start(d, Math.random()); s.stop(d + .1);
+  }
+};
+const fireBed = (dur, v = .05) => {             // ровный гул огня под щелчками
+  if (!ac) return;
+  const t = ac.currentTime, s = ac.createBufferSource(), lp = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = noiseBuf; s.loop = true; lp.type = 'lowpass'; lp.frequency.value = 500;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .8); g.gain.setValueAtTime(v, t + dur - .8); g.gain.linearRampToValueAtTime(0, t + dur);
+  s.connect(lp); lp.connect(g); g.connect(gameG); s.start(t, Math.random()); s.stop(t + dur + .1);
+};
+const tick = hi => {                            // ходики: тик-так
+  if (!ac) return;
+  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter();
+  o.type = 'square'; o.frequency.value = hi ? 2300 : 1900; bf.type = 'bandpass'; bf.frequency.value = hi ? 2600 : 2100; bf.Q.value = 6;
+  g.gain.setValueAtTime(.09, t); g.gain.exponentialRampToValueAtTime(.001, t + .025);
+  o.connect(bf); bf.connect(g); g.connect(gameG); o.start(t); o.stop(t + .03);
+};
+const wind = (dur, v = .1) => {                 // ветер на улице: шум с плавающим фильтром
+  if (!ac) return;
+  const t = ac.currentTime, s = ac.createBufferSource(), bf = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = noiseBuf; s.loop = true; bf.type = 'bandpass'; bf.Q.value = 1.2;
+  bf.frequency.setValueAtTime(350, t); bf.frequency.linearRampToValueAtTime(700, t + dur * .4); bf.frequency.linearRampToValueAtTime(420, t + dur);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 1.2); g.gain.linearRampToValueAtTime(v * .6, t + dur * .6); g.gain.linearRampToValueAtTime(0, t + dur);
+  s.connect(bf); bf.connect(g); g.connect(gameG); s.start(t, Math.random()); s.stop(t + dur + .1);
+};
+const every = (from, to, step, fn, jitter = 0) => {   // расписание повторяющихся звуков для кадра
+  const out = []; for (let x = from; x < to; x += step) out.push([x + Math.random() * jitter, fn]); return out;
+};
 const doorCreak = () => {                       // скрип двери: долгий, с плавающей высотой
   if (!ac) return;
   const t = ac.currentTime + .2, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
@@ -1233,16 +1270,81 @@ let lastHud = '', lastTask = '', irisR = 0, winMs = 0, winRec = false;
 // ================= ЗАСТАВКИ: кадры-картинки с подписью; клик/пробел — дальше, Esc — пропустить =================
 const cineEl = document.getElementById('cine'), cineText = document.getElementById('cineText');
 let cine = null;
-const BREAK_AT = 1.4;                            // момент удара по стеклу в третьем кадре
+const BREAK_AT = .25;                             // момент удара по стеклу в кадре побега
+// Кадры-картинки: медленный наезд и сдвиг камеры + живые детали поверх (огонь, свет, снег, пар). Координаты — в пикселях исходника 1664×928
+const CIMG = {};
+for (const [k, b64] of Object.entries(window.CINE_IMAGES || {})) { const im = new Image(); im.src = 'data:image/webp;base64,' + b64; CIMG[k] = im; }
+const imgScene = (key, o) => (now, t) => {
+  const im = CIMG[key];
+  ctx.fillStyle = '#05070c'; ctx.fillRect(0, 0, W, H);
+  if (!im || !im.complete || !im.naturalWidth) return;
+  const iw = im.naturalWidth, ih = im.naturalHeight, k0 = iw / 1664, portrait = W / H < 1.25;
+  const shake = o.shake ? o.shake(t) : 0;
+  const z = 1.06 + t * (o.zoom ?? .012), pan = o.pan || [0, 0];
+  const cxI = iw / 2 + pan[0] * k0 * t, cyI = ih / 2 + pan[1] * k0 * t;     // куда смотрит камера (в пикселях картинки)
+  if (portrait) {                                                         // телефон вертикально: вся картинка целиком, за ней — размытая копия
+    const sb = Math.max(W / iw, H / ih) * 1.1;
+    ctx.globalAlpha = .35; ctx.drawImage(im, W / 2 - iw * sb / 2, H / 2 - ih * sb / 2, iw * sb, ih * sb); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(3,5,10,.55)'; ctx.fillRect(0, 0, W, H);
+  }
+  const sc = (portrait ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih)) * z;
+  const ox = W / 2 - cxI * sc + shake, oy = H / 2 - cyI * sc;
+  ctx.save();
+  if (portrait) { ctx.beginPath(); ctx.rect(ox, oy, iw * sc, ih * sc); ctx.clip(); }
+  ctx.drawImage(im, ox, oy, iw * sc, ih * sc);
+  const P = (x, y) => [ox + x * k0 * sc, oy + y * k0 * sc], u = k0 * sc;   // точка исходника → экран; u — масштаб размеров
+  if (o.fx) o.fx(P, u, now, t);
+  if (o.snow) snowFront(now, t, S());
+  ctx.restore();
+  vignette(.45);
+  if (o.post) o.post(t);
+};
+const flick = now => .75 + .25 * Math.sin(now / 90) * Math.sin(now / 37);
+const steam = (P, u, now, x, y) => {                                     // пар над кружкой
+  ctx.strokeStyle = 'rgba(255,250,240,.45)'; ctx.lineWidth = 2.2 * u; ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const [sx, sy] = P(x + (i - 1) * 7, y), ph = now / 600 + i * 2.1, h = (40 + i * 6) * u;
+    ctx.globalAlpha = .5 + .3 * Math.sin(now / 400 + i);
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.bezierCurveTo(sx + Math.sin(ph) * 8 * u, sy - h * .35, sx - Math.sin(ph) * 8 * u, sy - h * .7, sx + Math.sin(ph + 1) * 6 * u, sy - h); ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.lineCap = 'butt';
+};
+const tickTock = (() => { let hi = false; return () => tick(hi = !hi); })();
 const CINES = {
-  intro: [{draw: (n, t) => sceneRoom(n, t), dur: 6.5, key: 'c1'},
-          {draw: (n, t) => sceneLocked(n, t), dur: 4.5, key: 'c2', at: [[.7, click], [1.1, click], [1.7, click], [2.1, click]]},
-          {draw: (n, t) => sceneBreak(n, t), dur: 6, key: 'c3', at: [[BREAK_AT, () => glassBreak()], [BREAK_AT + 1.25, () => footstep(false, 'snow')],   // спрыгнул в снег
-            ...Array.from({length: 12}, (_, i) => [BREAK_AT + 1.45 + i * .27, () => footstep(true, 'snow')])]},              // бежит босиком по снегу — те же шаги, что в игре
-          {draw: 'iris', dur: 3, key: 'c4'}],
-  outro: [{draw: (n, t) => sceneGrandma(n, t), dur: 6.5, key: 'o1', start: () => winTune()},
-          {draw: (n, t) => sceneDoor(n, t), dur: 6.5, key: 'o2', start: () => doorCreak()}],
-  stove: {draw: (n, t) => sceneStove(n, t), dur: 6.5, key: 'o3'},
+  intro: [{draw: imgScene('room', {pan: [-6, 0], fx: (P, u, now) => {       // тётин дом: огонь в печи и керосиновая лампа мерцают
+            const f = flick(now), [fx, fy] = P(593, 566), [lx, ly] = P(770, 405);
+            glowAdd(fx, fy, 260 * u, '255,130,40', .22 * f); glowAdd(lx, ly, 200 * u, '255,190,90', .18 + .05 * Math.sin(now / 120));
+          }}), dur: 6.5, key: 'c1', start: () => fireBed(6.5, .05),
+            at: [...every(.2, 6.3, .45, () => crackle(.16), .35), ...every(.3, 6.4, .5, tickTock)]},   // треск дров и ходики
+          {draw: imgScene('door', {zoom: .02, pan: [3, 0], shake: t => (t > .6 && t < 2.4) ? Math.sin(t * 60) * 3 * (Math.floor(t * 3) % 2) : 0,
+            fx: (P, u, now) => { const [lx, ly] = P(1292, 812); glowAdd(lx, ly, 260 * u, '255,180,80', .22 + .06 * Math.sin(now / 110) * Math.sin(now / 53)); }}),
+            dur: 4.5, key: 'c2', at: [.7, 1.1, 1.7, 2.1].map(x => [x, () => { knock(false); click(); }])},   // дёргает запертую дверь: дерево и железный засов
+          {draw: imgScene('escape', {pan: [7, 0], snow: true, fx: (P, u, now, t) => {   // побег: вспышка от удара, свет из разбитого окна, блики на осколках
+            const [wx, wy] = P(585, 240); glowAdd(wx, wy, 330 * u, '255,150,60', .16 + .04 * Math.sin(now / 140));
+            for (let i = 0; i < 8; i++) { const g = Math.sin(now / 120 + i * 2.3); if (g > .85) { const [gx, gy] = P(520 + i * 28, 600 + (i * 37) % 60); glowAdd(gx, gy, 14 * u, '255,255,240', .7); } }
+            if (t > BREAK_AT) { const a = Math.max(0, .75 * (1 - (t - BREAK_AT) / .45)); if (a > 0) { ctx.fillStyle = `rgba(255,245,225,${a})`; ctx.fillRect(0, 0, W, H); } }
+          }}), dur: 6, key: 'c3', start: () => wind(6, .07), at: [[BREAK_AT, () => glassBreak()], [BREAK_AT + .6, () => footstep(false, 'snow')],
+            ...Array.from({length: 18}, (_, i) => [BREAK_AT + .85 + i * .27, () => footstep(true, 'snow')])]},   // бежит босиком по снегу — те же шаги, что в игре
+          {draw: imgScene('street', {zoom: .02, pan: [0, -4], snow: true, fx: (P, u, now) => {   // улица села: окна и фонарь, фонарик мальчика
+            for (const [x, y] of [[299, 338], [416, 338], [1118, 364]]) { const [wx, wy] = P(x, y); glowAdd(wx, wy, 90 * u, '255,190,90', .14 + .03 * Math.sin(now / 900 + x)); }
+            const [sx, sy] = P(689, 262); glowAdd(sx, sy, 110 * u, '255,210,140', .16);
+            const [bx, by] = P(845, 600); glowAdd(bx, by, 160 * u, '230,235,255', .1 + .03 * Math.sin(now / 70));
+          }}), dur: 5.5, key: 'c4', start: () => wind(5.5, .09),
+            at: [...every(.3, 5.3, .55, () => footstep(false, 'snow')), [2.6, () => bark(.1, 1, p.x + 400)]]},   // идёт по улице, где-то лает собака
+          {draw: 'iris', dur: 2.5, key: 'c5'}],
+  outro: [{draw: imgScene('window', {pan: [-4, -2], snow: true, fx: (P, u, now) => {   // бабушка в окне: тёплый свет дышит, над кружкой пар
+            const [wx, wy] = P(1027, 390); glowAdd(wx, wy, 320 * u, '255,160,60', .14 + .04 * Math.sin(now / 700));
+            steam(P, u, now, 1000, 575);
+          }}), dur: 6.5, key: 'o1', start: () => { winTune(); wind(6.5, .05); }},
+          {draw: imgScene('porch', {zoom: .018, pan: [3, -2], snow: true, fx: (P, u, now) => {   // бабушка на пороге: свет из двери и фонарь
+            const [dx, dy] = P(962, 330); glowAdd(dx, dy, 380 * u, '255,190,90', .16 + .05 * Math.sin(now / 500));
+            const [lx, ly] = P(707, 265); glowAdd(lx, ly, 90 * u, '255,200,120', .18);
+          }, post: t => { if (t > 4.7) { ctx.fillStyle = `rgba(255,236,200,${Math.min(1, (t - 4.7) / 1.4)})`; ctx.fillRect(0, 0, W, H); } }}),
+            dur: 6.5, key: 'o2', start: () => doorCreak(), at: [1.6, 2.1, 2.6, 3.1].map(x => [x, () => footstep(false, 'wood')])},   // поднимается по деревянным ступенькам
+  ],
+  stove: {draw: imgScene('bonus', {pan: [3, 0], fx: (P, u, now) => {       // у печки: огонь мерцает
+            const [fx, fy] = P(273, 437); glowAdd(fx, fy, 300 * u, '255,130,40', .22 * flick(now));
+          }}), dur: 6.5, key: 'o3', low: true, start: () => fireBed(6.5, .05), at: every(.2, 6.3, .5, () => crackle(.14), .4)},
 };
 CINES.outro5 = [...CINES.outro, CINES.stove];
 const startCine = kind => {
@@ -1255,7 +1357,7 @@ const cineNext = () => {
   cine.i++; cine.t = 0;
   const f = CINES[cine.kind][cine.i];
   if (!f) return cineEnd();
-  cineText.textContent = t(f.key); cineText.style.opacity = 0;
+  cineText.textContent = t(f.key); cineText.style.opacity = 0; cineText.classList.toggle('low', !!f.low);   // low — подпись в левом верхнем углу, если по центру сверху лицо
   if (f.start) f.start();
 };
 const cineSkip = () => { if (cine) cineEnd(); };
@@ -1285,582 +1387,27 @@ const drawCine = (now, dt) => {
 };
 // --- кадры (рисуются кодом; s — масштаб под экран)
 const S = () => Math.min(W, H * 1.4) / 700;
-const snowfall = (now, n = 90) => {
-  ctx.fillStyle = 'rgba(235,242,250,.8)';
-  for (let i = 0; i < n; i++) { const x = (i * 137.5 + now / 30 * (1 + i % 3) * .3) % W, y = (i * 91.7 + now / 25 * (1 + i % 4) * .4) % H; ctx.fillRect(x, y, 1.5 + i % 2, 1.5 + i % 2); }
-};
-const boyBack = (x, y, s, step = 0, lit = false) => {   // мальчик со спины, босиком
-  const sw = Math.sin(step) * 4 * s;
-  ctx.fillStyle = '#d9b49a'; ctx.fillRect(x - 7 * s + sw, y + 22 * s, 5 * s, 9 * s); ctx.fillRect(x + 2 * s - sw, y + 22 * s, 5 * s, 9 * s);
-  ctx.fillStyle = '#26303c'; ctx.fillRect(x - 8 * s, y + 8 * s, 16 * s, 16 * s);
-  ctx.fillStyle = lit ? '#3a7ac4' : '#2e6cb5'; ctx.beginPath(); ctx.ellipse(x, y + 4 * s, 12 * s, 15 * s, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#c23b3b'; ctx.fillRect(x - 9 * s, y - 10 * s, 18 * s, 5 * s);
-  ctx.fillStyle = '#2a2018'; ctx.beginPath(); ctx.ellipse(x, y - 9 * s, 7 * s, 3.5 * s, 0, 0, 7); ctx.fill();   // волосы на затылке
-  ctx.fillStyle = '#c23b3b'; ctx.beginPath(); ctx.arc(x, y - 17 * s, 9.5 * s, 0, 7); ctx.fill();               // вязаная шапка со спины
-  ctx.fillStyle = '#f2ede4'; ctx.fillRect(x - 9.5 * s, y - 13 * s, 19 * s, 3 * s);                              // белая полоска
-  ctx.beginPath(); ctx.arc(x, y - 27 * s, 4 * s, 0, 7); ctx.fill();                                            // помпон
-};
 // --- общие детали кадров
 const lightPool = (x, y, r, col, a) => {
   const g = ctx.createRadialGradient(x, y, 0, x, y, r);
   g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
 };
-const frostCorner = (x, y, r, s) => {                          // морозные узоры в углу стекла
-  ctx.strokeStyle = 'rgba(235,245,255,.2)'; ctx.lineWidth = 1 * s;
-  for (let i = 0; i < 9; i++) {
-    const a = i / 9 * Math.PI / 2, l = r * (.5 + (i * 37 % 10) / 20);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
-    for (let k = 1; k < 4; k++) {
-      const px = x + Math.cos(a) * l * k / 4, py = y + Math.sin(a) * l * k / 4;
-      ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a + .7) * l * .2, py + Math.sin(a + .7) * l * .2);
-    }
-    ctx.stroke();
-  }
-};
-const smoothShape = (pts, ox, oy, k) => {                      // замкнутый плавный контур по точкам
-  ctx.beginPath();
-  const m = (i) => { const a = pts[i % pts.length], b = pts[(i + 1) % pts.length]; return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
-  let s0 = m(pts.length - 1); ctx.moveTo(ox + s0[0] * k, oy + s0[1] * k);
-  for (let i = 0; i < pts.length; i++) { const c = pts[i], e = m(i); ctx.quadraticCurveTo(ox + c[0] * k, oy + c[1] * k, ox + e[0] * k, oy + e[1] * k); }
-  ctx.closePath();
-};
-// Бабушка в полный рост в дверях (лицом к нам): платок, шаль с бахромой, длинная юбка; arms 0..1 — разводит руки
-const GRANNY_FRONT = [[0, -148], [13, -144], [17, -130], [15, -118], [24, -108], [27, -96], [30, -70], [24, -62], [27, -30], [34, 0],
-  [-34, 0], [-27, -30], [-24, -62], [-30, -70], [-27, -96], [-24, -108], [-15, -118], [-17, -130], [-13, -144]];
 
 // ================= ФИНАЛ =================
-// --- силуэтный стиль: чёрные фигуры на фоне света, слои с параллаксом, туман и снег
-const SIL = '#04060b';
-const STARS = Array.from({length: 90}, (_, i) => ({x: hv(i, 1, 1), y: hv(i, 2, 1) * .45, r: .5 + hv(i, 3, 1) * 1.2, ph: hv(i, 4, 1) * 6}));
+// --- снег, свечение, виньетка для кадров заставок
 const FLAKES2 = Array.from({length: 70}, (_, i) => ({x: hv(i, 5, 2), y: hv(i, 6, 2), z: .4 + hv(i, 7, 2) * 1.6, ph: hv(i, 8, 2) * 6}));
-const ridge = (y0, amp, seed, col, off, s) => {              // гряда холмов / кромка леса
-  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-50, H);
-  for (let x = -50; x <= W + 50; x += 8 * s) {
-    const u = (x + off) / (120 * s);
-    ctx.lineTo(x, y0 - amp * (Math.sin(u + seed) * .5 + Math.sin(u * 2.3 + seed * 2) * .3 + Math.sin(u * 5.1 + seed) * .2));
-  }
-  ctx.lineTo(W + 50, H); ctx.fill();
-};
-const spruceRow = (y0, h0, step, seed, col, off, s) => {      // ряд ёлок треугольниками-ярусами
-  ctx.fillStyle = col;
-  for (let x = -((off) % (step * s)) - step * s, i = Math.floor(off / (step * s)); x < W + step * s; x += step * s, i++) {
-    const h = h0 * s * (.6 + hv(i, seed, 3) * .7), w = h * .32, bx = x + hv(i, seed, 4) * step * s * .5;
-    ctx.beginPath();
-    for (let k = 0; k < 4; k++) { const ty = y0 - h + k * h * .22; ctx.moveTo(bx, ty); ctx.lineTo(bx - w * (.45 + k * .2), ty + h * .34); ctx.lineTo(bx + w * (.45 + k * .2), ty + h * .34); }
-    ctx.fill(); ctx.fillRect(bx - 1.5 * s, y0 - h * .1, 3 * s, h * .12);
-  }
-};
-const branch = (x, y, a, l, w, d, seed) => {                // голая берёза: ветки рекурсией
-  const x2 = x + Math.cos(a) * l, y2 = y + Math.sin(a) * l;
-  ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
-  if (d <= 0) return;
-  const n = d > 3 ? 2 : 3;
-  for (let i = 0; i < n; i++) branch(x2, y2, a + (hv(d, i, seed) - .5) * 1.3 + (i - (n - 1) / 2) * .35, l * (.62 + hv(i, d, seed) * .2), w * .62, d - 1, seed + i + 1);
-};
-const boySil = (x, y, k, rim, arm = 0, step = null) => {   // мальчик со спины силуэтом; arm 0..1 — тянет руку вверх, step — фаза бега
-  const lift = step === null ? [0, 0] : [Math.max(0, Math.sin(step)) * 7 * k, Math.max(0, -Math.sin(step)) * 7 * k];
-  const bob = step === null ? 0 : Math.abs(Math.cos(step)) * 3 * k;
-  const shape = (ox, oy, legs) => {
-    const X = x + ox, Y = y + oy - bob;
-    ctx.beginPath();
-    ctx.ellipse(X, Y - 46 * k, 15 * k, 19 * k, 0, 0, 7);                                   // курточка
-    if (legs) {                                                                             // ноги и босые ступни — без подсветки, чтобы кромка не лезла между ног
-      ctx.rect(X - 8 * k, Y - 32 * k, 6 * k, 30 * k - lift[0]); ctx.rect(X + 2 * k, Y - 32 * k, 6 * k, 30 * k - lift[1]);
-      ctx.moveTo(X - k, Y - 1.5 * k - lift[0]); ctx.ellipse(X - 6 * k, Y - 1.5 * k - lift[0], 5 * k, 2.5 * k, 0, 0, 7);   // moveTo — чтобы не тянулась линия от ноги
-      ctx.moveTo(X + 11 * k, Y - 1.5 * k - lift[1]); ctx.ellipse(X + 6 * k, Y - 1.5 * k - lift[1], 5 * k, 2.5 * k, 0, 0, 7);
-    }
-    ctx.moveTo(X + 11 * k, Y - 72 * k); ctx.arc(X, Y - 72 * k, 11 * k, 0, 7);              // голова в шапке
-    ctx.moveTo(X + 5 * k, Y - 86 * k); ctx.arc(X, Y - 86 * k, 5 * k, 0, 7);                 // помпон
-    ctx.fill();
-    if (arm > 0) {                                                                          // рука
-      ctx.lineWidth = 7 * k; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(X + 10 * k, Y - 56 * k);
-      ctx.lineTo(X + (14 + arm * 6) * k, Y - (56 + arm * 40) * k); ctx.stroke(); ctx.lineCap = 'butt';
-    }
-  };
-  ctx.fillStyle = ctx.strokeStyle = rim; shape(-1.8 * k, -.8 * k, false);       // тёплая кромка со стороны света
-  ctx.fillStyle = ctx.strokeStyle = SIL; shape(0, 0, true);
-};
-const camPush = (t, k = .012) => { const z = 1 + t * k; ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2); };
 const vignette = (a = .65) => {
   const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .72);
   vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${a})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 };
 const glowAdd = (x, y, r, col, a) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; lightPool(x, y, r, col, a); ctx.restore(); };
-const nightBack = (now, t, s, hz, moon) => {                // небо, звёзды, луна, холмы, тайга, туман, снег под луной
-  const cx = W / 2, cy = H / 2;
-  const sky = ctx.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, '#03060e'); sky.addColorStop(.7, '#0f1a31'); sky.addColorStop(1, '#22324f');
-  ctx.fillStyle = sky; ctx.fillRect(-50, -50, W + 100, H + 100);
-  for (const st of STARS) { ctx.fillStyle = `rgba(220,230,255,${.35 + .35 * Math.sin(now / 700 + st.ph)})`; ctx.fillRect(st.x * W, st.y * H, st.r, st.r); }
-  const [mx, my] = moon;
-  lightPool(mx, my, 170 * s, '170,195,240', .22); ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.arc(mx, my, 30 * s, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(190,200,220,.35)'; ctx.beginPath(); ctx.arc(mx - 8 * s, my - 6 * s, 7 * s, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(mx + 10 * s, my + 8 * s, 5 * s, 0, 7); ctx.fill();
-  ridge(hz - 30 * s, 40 * s, 1, '#16223a', t * 3 * s, s);
-  spruceRow(hz + 4 * s, 90, 34, 11, '#0c1527', t * 6 * s, s);
-  const fog = ctx.createLinearGradient(0, hz - 40 * s, 0, hz + 30 * s); fog.addColorStop(0, 'rgba(120,140,175,0)'); fog.addColorStop(.6, 'rgba(120,140,175,.18)'); fog.addColorStop(1, 'rgba(120,140,175,0)');
-  ctx.fillStyle = fog; ctx.fillRect(-50, hz - 40 * s, W + 100, 70 * s);
-  const sg = ctx.createLinearGradient(0, hz, 0, H); sg.addColorStop(0, '#5d7193'); sg.addColorStop(1, '#2a3650');
-  ctx.fillStyle = sg; ctx.fillRect(-50, hz, W + 100, H);
-};
 const snowFront = (now, t, s) => {
   for (const f of FLAKES2) {
     const sp = f.z, x = ((f.x * W + Math.sin(now / 1500 + f.ph) * 20 * sp - t * 10 * sp) % W + W) % W, y = ((f.y * H + now / 40 * sp) % (H + 20)) - 10;
     ctx.fillStyle = `rgba(235,242,252,${.25 + .35 * (sp / 2)})`; ctx.beginPath(); ctx.arc(x, y, sp * 1.6 * s, 0, 7); ctx.fill();
   }
 };
-const MOTES = Array.from({length: 40}, (_, i) => ({x: hv(i, 1, 7), y: hv(i, 2, 7), ph: hv(i, 3, 7) * 6}));
-// ================= ВСТУПЛЕНИЕ (силуэты) =================
-const sceneRoom = (now, t) => {                  // 1: тётин дом, без десяти десять. Мальчик силуэтом на фоне ночного окна
-  const s = S(), cx = W / 2, cy = H / 2, fl = cy + 160 * s;
-  ctx.save(); camPush(t);
-  const lx = cx + 200 * s, ly = cy - 10 * s, fire = .75 + .25 * Math.sin(now / 90) * Math.sin(now / 37);
-  const wallG = ctx.createRadialGradient(lx, ly, 0, lx, ly, 700 * s);                         // стена, освещённая лампой
-  wallG.addColorStop(0, '#5b3b22'); wallG.addColorStop(.5, '#2a1a0f'); wallG.addColorStop(1, '#0b0705');
-  ctx.fillStyle = wallG; ctx.fillRect(-50, -50, W + 100, H + 100);
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; for (let y = 0; y < fl; y += 26 * s) ctx.fillRect(-50, y, W + 100, 3 * s);   // брёвна
-  ctx.fillStyle = '#080504'; ctx.fillRect(-50, fl, W + 100, H);                                // пол
-  // окно: лунная ночь, ели, огоньки села, снег за стеклом
-  const ww = 240 * s, wh = 200 * s, wx = cx - 60 * s - ww / 2, wy = cy - 200 * s;
-  ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
-  const sky = ctx.createLinearGradient(0, wy, 0, wy + wh); sky.addColorStop(0, '#0d1830'); sky.addColorStop(1, '#3a5276');
-  ctx.fillStyle = sky; ctx.fillRect(wx, wy, ww, wh);
-  ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.arc(wx + ww * .78, wy + 40 * s, 14 * s, 0, 7); ctx.fill(); lightPool(wx + ww * .78, wy + 40 * s, 60 * s, '170,195,240', .3);
-  ctx.fillStyle = '#7f94b4'; ctx.fillRect(wx, wy + wh - 50 * s, ww, 50 * s);
-  ctx.fillStyle = '#0c1527'; for (let i = 0; i < 7; i++) { const tx = wx + (14 + i * 36) * s, th = (50 + hv(i, 1, 5) * 30) * s; ctx.beginPath(); ctx.moveTo(tx, wy + wh - 50 * s - th); ctx.lineTo(tx - 13 * s, wy + wh - 48 * s); ctx.lineTo(tx + 13 * s, wy + wh - 48 * s); ctx.fill(); }
-  ctx.fillStyle = '#ffc060'; ctx.fillRect(wx + 60 * s, wy + wh - 44 * s, 5 * s, 4 * s); ctx.fillRect(wx + 190 * s, wy + wh - 40 * s, 6 * s, 5 * s);
-  ctx.fillStyle = 'rgba(235,242,252,.8)'; for (let i = 0; i < 40; i++) ctx.fillRect(wx + (i * 53.7 + now / 40) % ww, wy + (i * 31.3 + now / 18 * (1 + i % 3)) % wh, 2, 2);
-  ctx.restore();
-  frostCorner(wx + 6 * s, wy + 6 * s, 60 * s, s);
-  ctx.fillStyle = 'rgba(220,235,250,.16)'; ctx.beginPath(); ctx.arc(cx - 40 * s, wy + wh - 70 * s, 22 * s + Math.sin(t * 1.4) * 3 * s, 0, 7); ctx.fill();   // запотело от дыхания
-  ctx.fillStyle = SIL;                                                                         // переплёт, рама, подоконник
-  ctx.fillRect(wx + ww / 2 - 4 * s, wy, 8 * s, wh); ctx.fillRect(wx, wy + wh * .4 - 4 * s, ww, 8 * s);
-  ctx.lineWidth = 14 * s; ctx.strokeStyle = SIL; ctx.strokeRect(wx, wy, ww, wh);
-  ctx.fillRect(wx - 24 * s, wy + wh, ww + 48 * s, 12 * s);
-  ctx.fillStyle = 'rgba(4,6,11,.7)';                                                           // занавески
-  ctx.beginPath(); ctx.moveTo(wx - 14 * s, wy - 12 * s); ctx.lineTo(wx + 56 * s, wy - 12 * s); ctx.quadraticCurveTo(wx + 26 * s, wy + 50 * s, wx - 14 * s, wy + 90 * s); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(wx + ww + 14 * s, wy - 12 * s); ctx.lineTo(wx + ww - 56 * s, wy - 12 * s); ctx.quadraticCurveTo(wx + ww - 26 * s, wy + 50 * s, wx + ww + 14 * s, wy + 90 * s); ctx.fill();
-  // мальчик сидит на лавке у окна, ладонь прижата к стеклу
-  const bx = cx - 60 * s, by = wy + wh + 12 * s, br = Math.sin(t * 1.4) * 1.2 * s;
-  ctx.fillStyle = SIL;
-  ctx.fillRect(wx - 40 * s, by + 50 * s, ww + 80 * s, 12 * s); ctx.fillRect(wx - 30 * s, by + 62 * s, 10 * s, fl - by - 62 * s); ctx.fillRect(wx + ww + 20 * s, by + 62 * s, 10 * s, fl - by - 62 * s);   // лавка
-  ctx.beginPath(); ctx.ellipse(bx, by + 24 * s + br, 26 * s, 32 * s, 0, 0, 7); ctx.fill();                       // спина
-  ctx.beginPath(); ctx.arc(bx, by - 20 * s + br, 17 * s, 0, 7); ctx.fill();                                      // голова в шапке
-  ctx.beginPath(); ctx.arc(bx + 3 * s, by - 42 * s + br, 8 * s, 0, 7); ctx.fill();                               // помпон
-  ctx.lineWidth = 11 * s; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(bx + 18 * s, by + 6 * s); ctx.lineTo(bx + 40 * s, by - 46 * s); ctx.stroke(); ctx.lineCap = 'butt';
-  ctx.beginPath(); ctx.ellipse(bx + 42 * s, by - 54 * s, 8 * s, 10 * s, -.3, 0, 7); ctx.fill();                  // ладонь на стекле
-  // русская печь слева — силуэт, огонь в топке
-  const px = cx - 470 * s, pw = 200 * s, py = cy - 160 * s;
-  ctx.fillStyle = '#0a0705'; ctx.fillRect(px, py, pw, fl - py); ctx.fillRect(px + 24 * s, py - 90 * s, 54 * s, 90 * s);
-  ctx.fillRect(px - 10 * s, py - 6 * s, pw + 20 * s, 12 * s);
-  const fx = px + 60 * s, fy = fl - 120 * s;
-  ctx.fillStyle = `rgb(${200 + 55 * fire},${90 + 60 * fire},30)`; ctx.beginPath(); ctx.moveTo(fx, fy + 60 * s); ctx.lineTo(fx, fy + 20 * s); ctx.arc(fx + 40 * s, fy + 20 * s, 40 * s, Math.PI, 0); ctx.lineTo(fx + 80 * s, fy + 60 * s); ctx.fill();
-  ctx.fillStyle = '#0a0705'; for (let i = 0; i < 3; i++) ctx.fillRect(fx + (12 + i * 22) * s, fy + 44 * s, 18 * s, 16 * s);   // поленья в огне
-  glowAdd(fx + 40 * s, fy + 40 * s, 300 * s, '255,120,40', .28 * fire);
-  // стол с керосиновой лампой справа
-  const tx = lx, ty = cy + 40 * s;
-  ctx.fillStyle = SIL; ctx.fillRect(tx - 90 * s, ty, 180 * s, 12 * s); ctx.fillRect(tx - 80 * s, ty + 12 * s, 10 * s, fl - ty - 12 * s); ctx.fillRect(tx + 70 * s, ty + 12 * s, 10 * s, fl - ty - 12 * s);
-  ctx.beginPath(); ctx.ellipse(tx, ty - 6 * s, 16 * s, 7 * s, 0, 0, 7); ctx.fill(); ctx.fillRect(tx - 3 * s, ty - 18 * s, 6 * s, 12 * s);
-  ctx.fillStyle = 'rgba(255,236,190,.85)'; ctx.beginPath(); ctx.ellipse(tx, ty - 40 * s, 11 * s, 22 * s, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#fff3c8'; ctx.beginPath(); ctx.ellipse(tx, ty - 38 * s, 3.5 * s, 8 * s, 0, 0, 7); ctx.fill();
-  glowAdd(tx, ty - 38 * s, 380 * s, '255,180,80', .3);
-  for (const m of MOTES) {                                                                     // пылинки в свете лампы
-    const mx = tx + (m.x - .5) * 300 * s + Math.sin(now / 2000 + m.ph) * 10 * s, my = ty - 40 * s + (m.y - .5) * 260 * s - ((now / 60 + m.ph * 40) % 60) * s * .3;
-    ctx.fillStyle = `rgba(255,220,160,${.25 + .2 * Math.sin(now / 400 + m.ph)})`; ctx.fillRect(mx, my, 1.6 * s, 1.6 * s);
-  }
-  // ходики: без десяти десять, маятник качается
-  const kx = cx + 380 * s, ky = cy - 190 * s;
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.moveTo(kx - 28 * s, ky + 30 * s); ctx.lineTo(kx - 28 * s, ky - 26 * s); ctx.lineTo(kx, ky - 46 * s); ctx.lineTo(kx + 28 * s, ky - 26 * s); ctx.lineTo(kx + 28 * s, ky + 30 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(240,225,190,.55)'; ctx.beginPath(); ctx.arc(kx, ky, 19 * s, 0, 7); ctx.fill();
-  ctx.strokeStyle = SIL; ctx.lineWidth = 2.6 * s; ctx.beginPath();
-  const ha = (21 + 50 / 60) / 12 * Math.PI * 2 - Math.PI / 2, ma = 50 / 60 * Math.PI * 2 - Math.PI / 2;
-  ctx.moveTo(kx, ky); ctx.lineTo(kx + Math.cos(ha) * 10 * s, ky + Math.sin(ha) * 10 * s); ctx.moveTo(kx, ky); ctx.lineTo(kx + Math.cos(ma) * 15 * s, ky + Math.sin(ma) * 15 * s); ctx.stroke();
-  const pa = Math.sin(now / 500) * .25, pxe = kx + Math.sin(pa) * 70 * s, pye = ky + 30 * s + Math.cos(pa) * 70 * s;
-  ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(kx, ky + 30 * s); ctx.lineTo(pxe, pye); ctx.stroke();
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.arc(pxe, pye, 7 * s, 0, 7); ctx.fill();
-  ctx.fillRect(kx - 16 * s, ky + 40 * s, 5 * s, 70 * s); ctx.fillRect(kx + 11 * s, ky + 40 * s, 5 * s, 50 * s);
-  ctx.beginPath(); ctx.ellipse(kx - 13.5 * s, ky + 116 * s, 6 * s, 10 * s, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(kx + 13.5 * s, ky + 96 * s, 6 * s, 10 * s, 0, 0, 7); ctx.fill();   // гирьки-шишки
-  // фото бабушки над столом: тёплый отсвет и силуэт в платке
-  const fx2 = tx, fy2 = cy - 150 * s;
-  ctx.fillStyle = SIL; ctx.fillRect(fx2 - 38 * s, fy2 - 48 * s, 76 * s, 96 * s);
-  ctx.fillStyle = 'rgba(205,175,120,.55)'; ctx.fillRect(fx2 - 30 * s, fy2 - 40 * s, 60 * s, 80 * s);
-  ctx.save(); ctx.beginPath(); ctx.rect(fx2 - 30 * s, fy2 - 40 * s, 60 * s, 80 * s); ctx.clip();
-  ctx.fillStyle = 'rgba(30,18,10,.85)'; smoothShape(GRANNY_FRONT, fx2, fy2 + 62 * s, .36 * s); ctx.fill(); ctx.restore();
-  ctx.restore(); vignette(.7);
-};
-const sceneLocked = (now, t) => {                // 2: заперто. Мальчик дёргает дверь, его огромная тень на двери
-  const s = S(), cx = W / 2, cy = H / 2, fl = cy + 170 * s;
-  const shake = (t > .6 && t < 2.4) ? Math.sin(t * 60) * 2.5 * s * (Math.floor(t * 3) % 2) : 0;
-  ctx.save(); camPush(t, .01);
-  const lx = cx - 520 * s, ly = cy + 40 * s;                                                   // лампа где-то слева на полу
-  const wallG = ctx.createRadialGradient(lx, ly, 0, lx, ly, 1000 * s);
-  wallG.addColorStop(0, '#6b4627'); wallG.addColorStop(.45, '#2e1d10'); wallG.addColorStop(1, '#070504');
-  ctx.fillStyle = wallG; ctx.fillRect(-50, -50, W + 100, H + 100);
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; for (let y = 0; y < fl; y += 26 * s) ctx.fillRect(-50, y, W + 100, 3 * s);
-  // дверь из досок, на ней кованая ручка и крючок
-  const dx = cx - 20 * s + shake, dy = cy - 250 * s, dw = 170 * s, dh = fl - dy;
-  ctx.fillStyle = '#070504'; ctx.fillRect(dx - 16 * s - shake, dy - 16 * s, dw + 32 * s, dh + 16 * s);
-  const dg = ctx.createLinearGradient(dx, 0, dx + dw, 0); dg.addColorStop(0, '#4a3018'); dg.addColorStop(1, '#22150b');
-  ctx.fillStyle = dg; ctx.fillRect(dx, dy, dw, dh);
-  ctx.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 1; k < 5; k++) ctx.fillRect(dx + dw * k / 5, dy, 2 * s, dh);
-  ctx.fillRect(dx + 10 * s, dy + 40 * s, dw - 20 * s, 14 * s); ctx.fillRect(dx + 10 * s, dy + dh - 80 * s, dw - 20 * s, 14 * s);
-  // огромная тень мальчика на двери и стене (свет снизу слева)
-  const bx = cx - 70 * s, reach = t < 2.4 ? 1 : Math.max(0, 1 - (t - 2.4) * 1.5);
-  ctx.save(); ctx.globalAlpha = .5; ctx.translate(bx + 110 * s + shake, fl - 10 * s); ctx.scale(1.45, 1.55); ctx.translate(-bx, -fl);
-  boySil(bx, fl, 1.9 * s, 'rgba(0,0,0,0)', reach); ctx.restore();
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.arc(dx + 30 * s, cy + 10 * s, 9 * s, 0, 7); ctx.fill();   // ручка-кольцо
-  ctx.strokeStyle = SIL; ctx.lineWidth = 4 * s; ctx.beginPath(); ctx.arc(dx + 30 * s, cy + 24 * s, 12 * s, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillRect(dx - 30 * s, cy - 40 * s, 44 * s, 6 * s);                                       // крючок на косяке
-  // тулуп на гвозде и взрослые валенки — силуэтами
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.moveTo(cx + 280 * s, cy - 180 * s); ctx.lineTo(cx + 330 * s, cy - 150 * s); ctx.lineTo(cx + 345 * s, cy + 30 * s); ctx.lineTo(cx + 250 * s, cy + 30 * s); ctx.lineTo(cx + 255 * s, cy - 150 * s); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + 295 * s, cy - 186 * s, 4 * s, 0, 7); ctx.fill();
-  for (const ox of [-330, -295]) { ctx.fillRect(cx + ox * s, fl - 60 * s, 28 * s, 60 * s); ctx.beginPath(); ctx.ellipse(cx + (ox + 22) * s, fl - 6 * s, 24 * s, 7 * s, 0, 0, 7); ctx.fill(); }
-  ctx.fillStyle = '#050403'; ctx.fillRect(-50, fl, W + 100, H);
-  glowAdd(lx + 120 * s, fl, 520 * s, '255,170,80', .18);
-  boySil(bx, fl + 4 * s, 1.9 * s, 'rgba(255,170,80,.85)', reach);
-  ctx.restore(); vignette(.75);
-};
-const SHARDS = Array.from({length: 30}, () => ({vx: (Math.random() - .25) * 220, vy: Math.random() * 120 - 40, r: Math.random() * 6.3, vr: (Math.random() - .5) * 14, sz: 3 + Math.random() * 8, ox: (Math.random() - .5) * 90, oy: (Math.random() - .5) * 80}));
-const sceneBreak = (now, t) => {                 // 3: снаружи — удар, осколки сверкают, вылезает и бежит босиком
-  const s = S(), cx = W / 2, cy = H / 2, hz = cy + 40 * s, gy = cy + 130 * s;
-  ctx.save(); camPush(t, .01);
-  nightBack(now, t, s, hz, [cx + 270 * s, cy - 200 * s]);
-  // тёткин дом слева: тёмная крыша, бревенчатый силуэт
-  const rx = cx - 560 * s, hw = 470 * s, ry = gy - 170 * s;
-  ctx.fillStyle = SIL; ctx.fillRect(rx, ry, hw, 174 * s);
-  ctx.fillStyle = '#0d0f14'; ctx.beginPath(); ctx.moveTo(rx - 30 * s, ry + 4 * s); ctx.lineTo(rx + hw * .5, ry - 110 * s); ctx.lineTo(rx + hw + 30 * s, ry + 4 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(190,210,235,.75)'; ctx.beginPath(); ctx.moveTo(rx - 32 * s, ry + 4 * s); ctx.lineTo(rx + hw * .5, ry - 112 * s); ctx.lineTo(rx + hw + 32 * s, ry + 4 * s); ctx.lineTo(rx + hw + 18 * s, ry); ctx.lineTo(rx + hw * .5, ry - 98 * s); ctx.lineTo(rx - 18 * s, ry); ctx.fill();
-  const ww = 120 * s, wh = 110 * s, wx = rx + hw - 190 * s, wy = ry + 30 * s, broke = t >= BREAK_AT, since = t - BREAK_AT;
-  glowAdd(wx + ww / 2, wy + wh / 2, 230 * s, '255,160,60', broke ? .3 : .2);
-  if (broke && since < .25) glowAdd(wx + ww / 2, wy + wh / 2, 320 * s, '255,240,220', .5 * (1 - since / .25));   // вспышка от удара
-  const wl = ctx.createRadialGradient(wx + ww * .5, wy + wh * .45, 0, wx + ww * .5, wy + wh * .45, ww * .8);
-  wl.addColorStop(0, '#ffe7b0'); wl.addColorStop(.6, '#ffb75a'); wl.addColorStop(1, '#d9772c');
-  ctx.fillStyle = wl; ctx.fillRect(wx, wy, ww, wh);
-  ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip(); ctx.fillStyle = SIL;
-  const climb = broke ? Math.min(1, Math.max(0, (since - .35) / .9)) : 0;
-  if (!broke || climb < .3) {                                                                  // мальчик внутри: замахивается
-    const arm = broke ? 0 : Math.min(1, Math.max(0, (t - .4) / (BREAK_AT - .4))), bx = wx + ww * .48, by = wy + wh * .62 + climb * 60 * s;
-    ctx.beginPath(); ctx.ellipse(bx, by + 34 * s, 24 * s, 28 * s, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(bx, by, 15 * s, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(bx + 2 * s, by - 19 * s, 6.5 * s, 0, 7); ctx.fill();
-    ctx.strokeStyle = SIL; ctx.lineWidth = 9 * s; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(bx + 16 * s, by + 18 * s);
-    ctx.lineTo(bx + (22 + arm * 14) * s, by + (18 - arm * 44) * s); ctx.stroke(); ctx.lineCap = 'butt';
-  }
-  ctx.restore();
-  if (!broke) { ctx.fillStyle = 'rgba(190,215,240,.18)'; ctx.fillRect(wx, wy, ww, wh); frostCorner(wx + 4 * s, wy + 4 * s, 40 * s, s); }
-  else {                                                                                       // зубцы оставшегося стекла
-    ctx.fillStyle = 'rgba(200,225,245,.5)';
-    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + ww, wy); ctx.lineTo(wx + ww * .8, wy + 24 * s); ctx.lineTo(wx + ww * .55, wy + 8 * s); ctx.lineTo(wx + ww * .3, wy + 30 * s); ctx.lineTo(wx, wy + 12 * s); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(wx, wy + wh); ctx.lineTo(wx + ww, wy + wh); ctx.lineTo(wx + ww * .7, wy + wh - 16 * s); ctx.lineTo(wx + ww * .4, wy + wh - 6 * s); ctx.lineTo(wx, wy + wh - 20 * s); ctx.fill();
-  }
-  ctx.fillStyle = SIL; ctx.lineWidth = 7 * s; ctx.strokeStyle = SIL; ctx.strokeRect(wx, wy, ww, wh);   // наличник
-  if (!broke) { ctx.fillRect(wx + ww / 2 - 2.5 * s, wy, 5 * s, wh); ctx.fillRect(wx, wy + wh * .4 - 2.5 * s, ww, 5 * s); }
-  ctx.beginPath(); ctx.moveTo(wx - 14 * s, wy - 4 * s); ctx.lineTo(wx + ww / 2, wy - 30 * s); ctx.lineTo(wx + ww + 14 * s, wy - 4 * s); ctx.fill();
-  ctx.fillRect(wx - 14 * s, wy + wh, ww + 28 * s, 8 * s);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';                                        // свет из окна на снегу
-  const lg = ctx.createLinearGradient(0, gy, 0, H); lg.addColorStop(0, 'rgba(255,150,60,.3)'); lg.addColorStop(1, 'rgba(255,150,60,0)');
-  ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(wx - 10 * s, gy); ctx.lineTo(wx + ww + 10 * s, gy); ctx.lineTo(wx + ww + 200 * s, H + 40); ctx.lineTo(wx - 80 * s, H + 40); ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = '#7f94b4'; ctx.beginPath(); ctx.ellipse(rx + hw * .5, gy + 4 * s, hw * .62, 18 * s, 0, Math.PI, 0); ctx.fill();   // сугроб под стеной
-  if (broke) for (const sh of SHARDS) {                                                        // осколки сверкают в свете окна и луны
-    const tt = Math.min(since, 1.3), x = wx + ww / 2 + sh.ox * s + sh.vx * tt * s, y = wy + wh / 2 + sh.oy * s + (sh.vy * tt + 430 * tt * tt) * s;
-    const landed = y > gy + 6 * s, yy = landed ? gy + 6 * s + (Math.abs(sh.oy) % 14) * s : y, glint = .5 + .5 * Math.sin(now / 80 + sh.r * 9);
-    ctx.save(); ctx.translate(x, yy); ctx.rotate(landed ? sh.r : sh.r + sh.vr * tt);
-    ctx.fillStyle = `rgba(230,240,255,${landed ? .35 + .4 * glint : .9})`; ctx.beginPath(); ctx.moveTo(0, -sh.sz * s); ctx.lineTo(sh.sz * .6 * s, sh.sz * .5 * s); ctx.lineTo(-sh.sz * .5 * s, sh.sz * .4 * s); ctx.fill(); ctx.restore();
-    if (glint > .92) glowAdd(x, yy, 10 * s, '255,250,235', .5);
-  }
-  // забор вправо от дома
-  for (let x = rx + hw + 40 * s, i = 0; x < W + 60; x += 17 * s, i++) {
-    const ph = 44 * s + hv(i, 2, 9) * 6 * s, py = gy - 6 * s;
-    ctx.fillStyle = SIL; ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x, py - ph); ctx.lineTo(x + 5 * s, py - ph - 7 * s); ctx.lineTo(x + 10 * s, py - ph); ctx.lineTo(x + 10 * s, py); ctx.fill();
-    ctx.fillStyle = 'rgba(200,215,235,.85)'; ctx.beginPath(); ctx.ellipse(x + 5 * s, py - ph - 5 * s, 6 * s, 3 * s, 0, 0, 7); ctx.fill();
-  }
-  ctx.fillStyle = SIL; ctx.fillRect(rx + hw + 40 * s, gy - 30 * s, W, 4 * s);
-  ctx.fillStyle = '#6c81a2'; ctx.fillRect(-50, gy - 8 * s, W + 100, 6 * s);
-  // вылез через подоконник, спрыгнул в снег и бежит вправо, к дороге
-  if (broke && climb >= .3) {
-    const lx0 = wx + ww / 2, ly0 = gy + 24 * s;
-    if (climb < 1) {
-      const k = (climb - .3) / .7, x = lx0 + 30 * s * k, y = wy + wh + 10 * s + (ly0 - (wy + wh + 10 * s)) * k - Math.sin(k * Math.PI) * 30 * s;
-      boySil(x, y, 1.15 * s, 'rgba(255,170,80,.85)');
-    } else {
-      const run = since - 1.25, bx = lx0 + 30 * s + run * 170 * s;
-      ctx.fillStyle = 'rgba(20,28,45,.5)';
-      for (let k = lx0 + 40 * s, i = 0; k < bx - 14 * s; k += 26 * s, i++) { ctx.beginPath(); ctx.ellipse(k, ly0 - 2 * s + (i % 2) * 6 * s, 5 * s, 2.5 * s, 0, 0, 7); ctx.fill(); }   // следы босых ног
-      boySil(bx, ly0, 1.15 * s, 'rgba(255,170,80,.85)', 0, now / 70);
-    }
-  }
-  snowFront(now, t, s);
-  ctx.restore(); vignette();
-};
-// Бабушка в профиль (лицом вправо), живая: дышит, отпивает из кружки, в конце наклоняется к окну.
 // Узнаваемость силуэта: платок козырьком над лбом и узлом под подбородком, выступающий нос, впалый рот, сутулая спина
-const GR_HEAD = [[-9, -14], [-5, -20], [1, -21.5], [6, -18.5], [9.2, -14], [10, -11], [8, -10], [8.8, -7.5], [12.6, -4.2], [9.8, -2.6],
-  [9, -1], [10.6, 1.4], [8, 3.6], [4.5, 4], [0, 3], [-5, 2.5], [-11, 7], [-10, -1], [-11, -8]];
-const GR_BODY = [[-6, -1], [-14, 3], [-20, 12], [-23, 26], [-24, 44], [-24, 70], [16, 70], [15, 46], [13, 30], [10, 14], [6, 5], [3, 2]];
-const grannyAlive = (x, y, k, t, now) => {        // (x, y) — основание шеи
-  const ease = u => u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u);
-  const lift = ease((t - 1.2) / .8) - ease((t - 2.8) / .7);       // поднимает кружку и опускает
-  const lean = ease((t - 3.6) / 1.2);                               // потом наклоняется к стеклу
-  const br = Math.sin(now / 900) * .8;                              // дыхание
-  ctx.save(); ctx.translate(x + lean * 5 * k, y + br * .3 * k); ctx.rotate(lean * .08);
-  ctx.fillStyle = SIL; ctx.strokeStyle = SIL;
-  smoothShape(GR_BODY, 0, 0, k); ctx.fill();                                                   // сгорбленная спина и шаль
-  ctx.beginPath(); ctx.moveTo(-14 * k, 4 * k); ctx.lineTo(-22 * k, 22 * k); ctx.lineTo(-12 * k, 14 * k); ctx.fill();   // кончик платка на спине
-  ctx.save(); ctx.rotate(-lift * .22 + Math.sin(now / 1400) * .03 + lean * .06);           // голова: кивает, при глотке запрокидывается
-  smoothShape(GR_HEAD, 0, 0, k); ctx.fill();
-  ctx.beginPath(); ctx.arc(5.5 * k, 4.6 * k, 2.3 * k, 0, 7); ctx.fill();                   // узел платка
-  ctx.beginPath(); ctx.moveTo(5 * k, 5.5 * k); ctx.lineTo(7.5 * k, 10.5 * k); ctx.lineTo(3.5 * k, 8 * k); ctx.fill();
-  ctx.restore();
-  // рука с кружкой: от груди ко рту
-  const hx = 15 + (11 - 15) * lift, hy = 24 + (3 - 24) * lift;
-  ctx.lineWidth = 6 * k; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-2 * k, 12 * k); ctx.quadraticCurveTo(2 * k, 32 * k, (hx - 2) * k, hy * k); ctx.stroke();
-  ctx.save(); ctx.translate(hx * k, hy * k); ctx.rotate(-lift * .7);
-  ctx.fillRect(-1 * k, -8 * k, 8 * k, 9 * k);                                                  // кружка
-  ctx.lineWidth = 1.8 * k; ctx.beginPath(); ctx.arc(8 * k, -3.5 * k, 3 * k, -1.4, 1.4); ctx.stroke();
-  ctx.restore(); ctx.lineCap = 'butt';
-  if (lift < .2) {                                                                             // пар над кружкой
-    ctx.strokeStyle = 'rgba(255,250,235,.55)'; ctx.lineWidth = 1.2 * k;
-    for (let i = 0; i < 2; i++) {
-      const sx = (hx + 1.5 + i * 3.5) * k, sy = (hy - 9) * k, ph = now / 500 + i * 2;
-      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.bezierCurveTo(sx + Math.sin(ph) * 3 * k, sy - 5 * k, sx - Math.sin(ph) * 3 * k, sy - 10 * k, sx + Math.sin(ph + 1) * 2 * k, sy - 15 * k); ctx.stroke();
-    }
-  }
-  ctx.restore();
-};
-const sceneGrandma = (now, t) => {               // финал 1: силуэты. Ночь, дом с зелёной крышей, в окне бабушка с кружкой; мальчик в снегу
-  const s = S(), cx = W / 2, cy = H / 2, hz = cy + 40 * s, gy = cy + 135 * s;
-  ctx.save();
-  const z = 1 + t * .012; ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-cx, -cy);   // медленный наезд камеры
-  const sky = ctx.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, '#03060e'); sky.addColorStop(.7, '#0f1a31'); sky.addColorStop(1, '#22324f');
-  ctx.fillStyle = sky; ctx.fillRect(-50, -50, W + 100, H + 100);
-  for (const st of STARS) { ctx.fillStyle = `rgba(220,230,255,${.35 + .35 * Math.sin(now / 700 + st.ph)})`; ctx.fillRect(st.x * W, st.y * H, st.r, st.r); }
-  const mx = cx + 250 * s, my = cy - 190 * s;                                                  // луна с ореолом
-  lightPool(mx, my, 170 * s, '170,195,240', .22); ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.arc(mx, my, 30 * s, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(190,200,220,.35)'; ctx.beginPath(); ctx.arc(mx - 8 * s, my - 6 * s, 7 * s, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(mx + 10 * s, my + 8 * s, 5 * s, 0, 7); ctx.fill();
-  ridge(hz - 30 * s, 40 * s, 1, '#16223a', t * 3 * s, s);                                       // дальние холмы
-  spruceRow(hz + 4 * s, 90, 34, 11, '#0c1527', t * 6 * s, s);                                   // кромка тайги
-  const fog = ctx.createLinearGradient(0, hz - 40 * s, 0, hz + 30 * s); fog.addColorStop(0, 'rgba(120,140,175,0)'); fog.addColorStop(.6, 'rgba(120,140,175,.18)'); fog.addColorStop(1, 'rgba(120,140,175,0)');
-  ctx.fillStyle = fog; ctx.fillRect(-50, hz - 40 * s, W + 100, 70 * s);
-  // снег под луной
-  const sg = ctx.createLinearGradient(0, hz, 0, H); sg.addColorStop(0, '#5d7193'); sg.addColorStop(1, '#2a3650');
-  ctx.fillStyle = sg; ctx.fillRect(-50, hz, W + 100, H);
-  // дом: чёрный силуэт, тёмно-зелёная крыша, снег на скатах, труба с дымом
-  const hx = cx - 70 * s, hw = 400 * s, hb = gy, ht = 150 * s, rx = hx - hw / 2, ry = hb - ht;
-  ctx.fillStyle = SIL; ctx.fillRect(rx, ry, hw, ht + 4 * s);
-  ctx.fillRect(hx + 90 * s, ry - 110 * s, 26 * s, 70 * s);                                        // труба
-  ctx.fillStyle = '#0b2015'; ctx.beginPath(); ctx.moveTo(rx - 34 * s, ry + 6 * s); ctx.lineTo(hx - 70 * s, ry - 92 * s); ctx.lineTo(hx + 70 * s, ry - 92 * s); ctx.lineTo(rx + hw + 34 * s, ry + 6 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(190,210,235,.75)';                                                     // снег на крыше
-  ctx.beginPath(); ctx.moveTo(rx - 36 * s, ry + 6 * s); ctx.lineTo(hx - 72 * s, ry - 94 * s); ctx.lineTo(hx + 72 * s, ry - 94 * s); ctx.lineTo(rx + hw + 36 * s, ry + 6 * s);
-  ctx.lineTo(rx + hw + 24 * s, ry + 2 * s); ctx.quadraticCurveTo(hx + 120 * s, ry - 40 * s, hx + 64 * s, ry - 84 * s); ctx.lineTo(hx - 64 * s, ry - 84 * s); ctx.quadraticCurveTo(hx - 140 * s, ry - 30 * s, rx - 24 * s, ry + 2 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(200,215,235,.8)'; ctx.fillRect(hx + 87 * s, ry - 114 * s, 32 * s, 6 * s);
-  for (let i = 0; i < 12; i++) {                                                               // дым из трубы
-    const k = ((t * .25 + i / 12) % 1), px = hx + 103 * s + Math.sin(k * 4 + i) * 14 * s + k * 60 * s, py = ry - 118 * s - k * 150 * s;
-    const r = (12 + k * 34) * s, sg2 = ctx.createRadialGradient(px, py, 0, px, py, r);
-    sg2.addColorStop(0, `rgba(150,165,190,${.2 * (1 - k)})`); sg2.addColorStop(1, 'rgba(150,165,190,0)'); ctx.fillStyle = sg2; ctx.fillRect(px - r, py - r, r * 2, r * 2);
-  }
-  // окно: свечение, живая бабушка с кружкой, занавески, герань и рама — силуэтами
-  const ww = 112 * s, wh = 100 * s, wx = hx - ww / 2 - 20 * s, wy = ry + 26 * s;
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  lightPool(wx + ww / 2, wy + wh / 2, 230 * s, '255,160,60', .2 + .02 * Math.sin(now / 160));
-  ctx.restore();
-  const wl = ctx.createRadialGradient(wx + ww * .55, wy + wh * .45, 0, wx + ww * .55, wy + wh * .45, ww * .8);
-  wl.addColorStop(0, '#ffe7b0'); wl.addColorStop(.6, '#ffb75a'); wl.addColorStop(1, '#d9772c');
-  ctx.fillStyle = wl; ctx.fillRect(wx, wy, ww, wh);
-  ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
-  grannyAlive(wx + ww * .5, wy + wh * .58, 1.15 * s, t, now);
-  ctx.restore();
-  ctx.fillStyle = 'rgba(10,6,4,.55)';                                                          // кружевные занавески, подвязанные к краям
-  ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + 30 * s, wy); ctx.quadraticCurveTo(wx + 8 * s, wy + 50 * s, wx + 16 * s, wy + wh); ctx.lineTo(wx, wy + wh); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(wx + ww, wy); ctx.lineTo(wx + ww - 30 * s, wy); ctx.quadraticCurveTo(wx + ww - 8 * s, wy + 50 * s, wx + ww - 16 * s, wy + wh); ctx.lineTo(wx + ww, wy + wh); ctx.fill();
-  ctx.fillStyle = SIL;                                                                         // герань на подоконнике
-  ctx.fillRect(wx + 14 * s, wy + wh - 16 * s, 16 * s, 14 * s);
-  for (const [ox, oy, r] of [[22, -24, 9], [14, -20, 6], [30, -19, 6], [20, -32, 5]]) { ctx.beginPath(); ctx.arc(wx + ox * s, wy + wh + oy * s, r * s, 0, 7); ctx.fill(); }
-  ctx.fillRect(wx, wy + wh * .28 - 2.5 * s, ww, 5 * s); ctx.fillRect(wx + ww / 2 - 2.5 * s, wy, 5 * s, wh * .28);   // переплёт: форточка сверху, ниже голова не перекрыта
-  ctx.lineWidth = 7 * s; ctx.strokeStyle = SIL; ctx.strokeRect(wx, wy, ww, wh);
-  ctx.beginPath(); ctx.moveTo(wx - 14 * s, wy - 4 * s); ctx.quadraticCurveTo(wx + ww / 2, wy - 40 * s, wx + ww + 14 * s, wy - 4 * s); ctx.lineTo(wx + ww + 14 * s, wy + 2 * s); ctx.lineTo(wx - 14 * s, wy + 2 * s); ctx.fill();   // «кокошник» наличника
-  ctx.fillRect(wx - 16 * s, wy + wh, ww + 32 * s, 8 * s);
-  ctx.fillStyle = 'rgba(200,215,235,.8)'; ctx.fillRect(wx - 16 * s, wy + wh - 2 * s, ww + 32 * s, 3 * s);   // снег на подоконнике
-  // второе окошко: тусклое, в глубине дома
-  ctx.fillStyle = '#5a3416'; ctx.fillRect(hx + 70 * s, ry + 40 * s, 50 * s, 46 * s);
-  ctx.fillStyle = SIL; ctx.fillRect(hx + 93 * s, ry + 40 * s, 4 * s, 46 * s); ctx.fillRect(hx + 70 * s, ry + 60 * s, 50 * s, 4 * s);
-  // свет из окна на снегу
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const lg = ctx.createLinearGradient(0, gy, 0, H); lg.addColorStop(0, 'rgba(255,150,60,.35)'); lg.addColorStop(1, 'rgba(255,150,60,0)');
-  ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(wx - 10 * s, gy + 2 * s); ctx.lineTo(wx + ww + 10 * s, gy + 2 * s); ctx.lineTo(wx + ww + 160 * s, H + 40); ctx.lineTo(wx - 120 * s, H + 40); ctx.fill();
-  ctx.restore();
-  // сугроб у стены и забор-штакетник со снежными шапками
-  ctx.fillStyle = '#7f94b4'; ctx.beginPath(); ctx.ellipse(hx, gy + 4 * s, hw * .62, 16 * s, 0, Math.PI, 0); ctx.fill();
-  for (let x = rx - 150 * s, i = 0; x < rx + hw + 190 * s; x += 17 * s, i++) {
-    if (x > wx - 70 * s && x < wx + ww + 40 * s) continue;                                    // калитка напротив окна
-    const ph = 58 * s + hv(i, 1, 9) * 8 * s, px = x, py = gy + 26 * s;
-    ctx.fillStyle = SIL; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - ph); ctx.lineTo(px + 5 * s, py - ph - 7 * s); ctx.lineTo(px + 10 * s, py - ph); ctx.lineTo(px + 10 * s, py); ctx.fill();
-    ctx.fillStyle = 'rgba(200,215,235,.85)'; ctx.beginPath(); ctx.ellipse(px + 5 * s, py - ph - 5 * s, 6 * s, 3 * s, 0, 0, 7); ctx.fill();
-  }
-  ctx.fillStyle = SIL; ctx.fillRect(rx - 150 * s, gy - 6 * s, wx - 70 * s - (rx - 150 * s), 5 * s); ctx.fillRect(wx + ww + 40 * s, gy - 6 * s, rx + hw + 190 * s - (wx + ww + 40 * s), 5 * s);
-  ctx.fillStyle = '#6c81a2'; ctx.fillRect(-50, gy + 24 * s, W + 100, 8 * s);                     // снег перед забором
-  // передний план: берёза слева, следы и мальчик
-  ctx.strokeStyle = SIL; ctx.lineCap = 'round';
-  const tx0 = cx - 320 * s - t * 3 * s;
-  branch(tx0, H + 20, -Math.PI / 2 + .04, 200 * s, 14 * s, 6, 3);
-  ctx.lineCap = 'butt';
-  ctx.fillStyle = 'rgba(20,28,45,.45)';
-  for (let i = 0; i < 7; i++) { const k = i / 6; ctx.beginPath(); ctx.ellipse(cx + 360 * s + (i % 2 ? 8 : -8) * s - k * 30 * s, H + 10 - k * (H + 10 - gy - 100 * s), (6 - k * 2.5) * s, (3 - k * 1.2) * s, 0, 0, 7); ctx.fill(); }
-  boySil(cx + 330 * s, gy + 92 * s + Math.sin(t * 1.6) * .8 * s, 1.15 * s, 'rgba(255,170,80,.9)');
-  // снег: дальний мелкий и ближний крупный
-  for (const f of FLAKES2) {
-    const sp = f.z, x = ((f.x * W + Math.sin(now / 1500 + f.ph) * 20 * sp - t * 10 * sp) % W + W) % W, y = ((f.y * H + now / 40 * sp) % (H + 20)) - 10;
-    ctx.fillStyle = `rgba(235,242,252,${.25 + .35 * (sp / 2)})`; ctx.beginPath(); ctx.arc(x, y, sp * 1.6 * s, 0, 7); ctx.fill();
-  }
-  ctx.restore();
-  const vg = ctx.createRadialGradient(cx, cy, Math.min(W, H) * .3, cx, cy, Math.max(W, H) * .72);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.65)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-};
-const sceneDoor = (now, t) => {                  // финал 2: силуэты. Скрип, дверь открывается, бабушка на пороге разводит руки
-  const s = S(), cx = W / 2, cy = H / 2, gy = cy + 150 * s, open = Math.min(1, Math.max(0, (t - .4) / 1.8));
-  ctx.save(); camPush(t, .015);
-  const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#03060e'); sky.addColorStop(1, '#1a2742');
-  ctx.fillStyle = sky; ctx.fillRect(-50, -50, W + 100, H + 100);
-  for (const st of STARS) { ctx.fillStyle = `rgba(220,230,255,${.35 + .35 * Math.sin(now / 700 + st.ph)})`; ctx.fillRect(st.x * W, st.y * H * .5, st.r, st.r); }
-  // стена дома и зелёная крыша со снегом
-  const top = cy - 230 * s;
-  ctx.fillStyle = SIL; ctx.fillRect(cx - 520 * s, top, 1040 * s, gy - top);
-  ctx.fillStyle = '#0b2015'; ctx.beginPath(); ctx.moveTo(cx - 580 * s, top + 6 * s); ctx.lineTo(cx - 420 * s, top - 120 * s); ctx.lineTo(cx + 420 * s, top - 120 * s); ctx.lineTo(cx + 580 * s, top + 6 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(190,210,235,.75)'; ctx.beginPath(); ctx.moveTo(cx - 584 * s, top + 6 * s); ctx.lineTo(cx - 422 * s, top - 122 * s); ctx.lineTo(cx + 422 * s, top - 122 * s); ctx.lineTo(cx + 584 * s, top + 6 * s); ctx.lineTo(cx + 570 * s, top); ctx.lineTo(cx + 410 * s, top - 110 * s); ctx.lineTo(cx - 410 * s, top - 110 * s); ctx.lineTo(cx - 570 * s, top); ctx.fill();
-  ctx.fillStyle = 'rgba(200,215,235,.8)'; for (let i = 0; i < 18; i++) { const ix = cx - 560 * s + i * 66 * s; ctx.beginPath(); ctx.moveTo(ix, top + 4 * s); ctx.lineTo(ix + 5 * s, top + 4 * s); ctx.lineTo(ix + 2.5 * s, top + (16 + hv(i, 1, 6) * 14) * s); ctx.fill(); }   // сосульки
-  // боковое окошко тёплое
-  const sx = cx + 260 * s, sy = cy - 140 * s;
-  glowAdd(sx + 45 * s, sy + 40 * s, 160 * s, '255,160,60', .15);
-  ctx.fillStyle = '#e49a4a'; ctx.fillRect(sx, sy, 90 * s, 80 * s);
-  ctx.fillStyle = SIL; ctx.fillRect(sx + 43 * s, sy, 4 * s, 80 * s); ctx.fillRect(sx, sy + 32 * s, 90 * s, 4 * s);
-  ctx.beginPath(); ctx.moveTo(sx - 10 * s, sy - 3 * s); ctx.quadraticCurveTo(sx + 45 * s, sy - 30 * s, sx + 100 * s, sy - 3 * s); ctx.fill(); ctx.fillRect(sx - 10 * s, sy + 80 * s, 110 * s, 7 * s);
-  // дверной проём: тёплые сени, лампа в глубине
-  const dw = 150 * s, dh = 250 * s, dx = cx - dw / 2, dy = gy - 48 * s - dh;
-  const inl = ctx.createRadialGradient(cx, dy + dh * .35, 0, cx, dy + dh * .35, dh * .9);
-  inl.addColorStop(0, '#fff0c8'); inl.addColorStop(.5, '#ffbe6a'); inl.addColorStop(1, '#c96a26');
-  glowAdd(cx, dy + dh * .5, 380 * s, '255,160,60', .12 + .25 * open);
-  ctx.fillStyle = inl; ctx.fillRect(dx, dy, dw, dh);
-  ctx.save(); ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
-  ctx.fillStyle = 'rgba(60,25,8,.35)'; ctx.fillRect(dx, dy + dh - 30 * s, dw, 30 * s);                   // половик в сенях
-  const gIn = Math.min(1, Math.max(0, (t - 1.1) / 1.1)), arms = Math.min(1, Math.max(0, (t - 2.5) / 1));
-  if (gIn > 0) {                                                                                       // бабушка выходит к порогу
-    const k = s * (.95 + .2 * gIn), gx = cx + 4 * s, gyy = dy + dh - (1 - gIn) * 20 * s;
-    ctx.globalAlpha = gIn; ctx.fillStyle = SIL; smoothShape(GRANNY_FRONT, gx, gyy, k); ctx.fill();
-    ctx.strokeStyle = SIL; ctx.lineWidth = 9 * k; ctx.lineCap = 'round';
-    for (const sd of [-1, 1]) {
-      const hx = gx + sd * (14 + arms * 38) * k, hy = gyy - (66 + arms * 22) * k;
-      ctx.beginPath(); ctx.moveTo(gx + sd * 23 * k, gyy - 100 * k); ctx.quadraticCurveTo(gx + sd * (30 + arms * 14) * k, gyy - (80 + arms * 10) * k, hx, hy); ctx.stroke();
-    }
-    ctx.lineCap = 'butt'; ctx.globalAlpha = 1;
-  }
-  ctx.restore();
-  // створка открывается наружу, к нам (поворот на петлях слева)
-  const leaf = dw * (1 - open * .82), skew = open * 18 * s;
-  ctx.fillStyle = '#0a0705'; ctx.beginPath(); ctx.moveTo(dx, dy); ctx.lineTo(dx + leaf, dy - skew); ctx.lineTo(dx + leaf, dy + dh + skew); ctx.lineTo(dx, dy + dh); ctx.fill();
-  ctx.fillStyle = 'rgba(255,190,110,.25)'; ctx.fillRect(dx + leaf - 2 * s, dy - skew, 2 * s, dh + skew * 2);   // кромка створки в свете
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.arc(dx + leaf - 14 * s, dy + dh * .52, 5 * s, 0, 7); ctx.fill();
-  ctx.lineWidth = 12 * s; ctx.strokeStyle = SIL; ctx.strokeRect(dx - 6 * s, dy - 6 * s, dw + 12 * s, dh + 6 * s);   // наличник
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.moveTo(dx - 24 * s, dy - 8 * s); ctx.quadraticCurveTo(cx, dy - 46 * s, dx + dw + 24 * s, dy - 8 * s); ctx.fill();
-  // тёплый пар из двери на мороз
-  for (let i = 0; i < 8; i++) {
-    const k = ((t * .3 + i / 8) % 1), px = cx + (hv(i, 1, 8) - .5) * dw + Math.sin(k * 5 + i) * 10 * s, py = dy + dh * .3 - k * 120 * s, r = (16 + k * 30) * s;
-    const pg = ctx.createRadialGradient(px, py, 0, px, py, r); pg.addColorStop(0, `rgba(255,225,180,${.12 * open * (1 - k)})`); pg.addColorStop(1, 'rgba(255,225,180,0)');
-    ctx.fillStyle = pg; ctx.fillRect(px - r, py - r, r * 2, r * 2);
-  }
-  // крыльцо: столбики, козырёк, ступеньки со снегом
-  ctx.fillStyle = SIL; ctx.fillRect(dx - 70 * s, dy - 60 * s, 12 * s, gy - dy + 60 * s); ctx.fillRect(dx + dw + 58 * s, dy - 60 * s, 12 * s, gy - dy + 60 * s);
-  ctx.fillStyle = '#0b2015'; ctx.beginPath(); ctx.moveTo(dx - 100 * s, dy - 56 * s); ctx.lineTo(cx, dy - 120 * s); ctx.lineTo(dx + dw + 100 * s, dy - 56 * s); ctx.fill();
-  ctx.fillStyle = 'rgba(190,210,235,.75)'; ctx.beginPath(); ctx.moveTo(dx - 104 * s, dy - 54 * s); ctx.lineTo(cx, dy - 122 * s); ctx.lineTo(dx + dw + 104 * s, dy - 54 * s); ctx.lineTo(dx + dw + 90 * s, dy - 60 * s); ctx.lineTo(cx, dy - 110 * s); ctx.lineTo(dx - 90 * s, dy - 60 * s); ctx.fill();
-  for (let i = 0; i < 3; i++) {
-    const sy2 = gy - 48 * s + i * 16 * s, sw = dw + 120 * s + i * 50 * s;
-    ctx.fillStyle = SIL; ctx.fillRect(cx - sw / 2, sy2, sw, 16 * s);
-    ctx.fillStyle = 'rgba(200,215,235,.8)'; ctx.fillRect(cx - sw / 2, sy2, sw, 3.5 * s);
-  }
-  // снег перед домом и клин света
-  const sg = ctx.createLinearGradient(0, gy, 0, H); sg.addColorStop(0, '#5d7193'); sg.addColorStop(1, '#2a3650');
-  ctx.fillStyle = sg; ctx.fillRect(-50, gy, W + 100, H);
-  ctx.fillStyle = '#7f94b4'; ctx.beginPath(); ctx.ellipse(cx - 380 * s, gy + 4 * s, 200 * s, 22 * s, 0, Math.PI, 0); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx + 400 * s, gy + 4 * s, 190 * s, 20 * s, 0, Math.PI, 0); ctx.fill();
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const lg = ctx.createLinearGradient(0, gy - 48 * s, 0, H); lg.addColorStop(0, `rgba(255,170,80,${.5 * open})`); lg.addColorStop(1, 'rgba(255,170,80,0)');
-  ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(dx + leaf, gy - 48 * s); ctx.lineTo(dx + dw, gy - 48 * s); ctx.lineTo(dx + dw + 240 * s, H + 40); ctx.lineTo(dx + leaf - 140 * s, H + 40); ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = SIL; ctx.fillRect(dx + dw + 90 * s, gy - 4 * s, 26 * s, 12 * s); ctx.fillRect(dx + dw + 101 * s, gy - 46 * s, 4 * s, 44 * s);   // голик у крыльца
-  // мальчик поднимается к ней по ступенькам
-  const walk = Math.min(1, Math.max(0, (t - 2.4) / 2)), bx = cx + 10 * s, by = gy + 60 * s - walk * 92 * s;
-  ctx.fillStyle = 'rgba(20,28,45,.45)';
-  for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(bx + (i % 2 ? 8 : -8) * s, H + 6 - i * 26 * s, 6 * s, 3 * s, 0, 0, 7); ctx.fill(); }
-  boySil(bx, by, 1.2 * s * (1 - walk * .1), 'rgba(255,190,110,.95)', 0, walk > 0 && walk < 1 ? now / 80 : null);
-  snowFront(now, t, s);
-  ctx.restore(); vignette(.6);
-  if (t > 4.7) { ctx.fillStyle = `rgba(255,236,200,${Math.min(1, (t - 4.7) / 1.4)})`; ctx.fillRect(0, 0, W, H); }   // тепло заливает экран
-};
-const sceneStove = (now, t) => {                 // финал за все 5 секретов: у печки, находки на полу, бабушка гладит его по голове
-  const s = S(), cx = W / 2, cy = H / 2, fl = cy + 95 * s, fire = .75 + .25 * Math.sin(now / 90) * Math.sin(now / 37);
-  ctx.save(); camPush(t, .01);
-  const sx = cx + 330 * s, sy = cy + 20 * s;                                                    // печь справа — главный свет
-  const wallG = ctx.createRadialGradient(sx, sy, 0, sx, sy, 900 * s);
-  wallG.addColorStop(0, `rgb(${110 + 30 * fire},${62 + 15 * fire},30)`); wallG.addColorStop(.45, '#2e1a0d'); wallG.addColorStop(1, '#070403');
-  ctx.fillStyle = wallG; ctx.fillRect(-50, -50, W + 100, H + 100);
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; for (let y = 0; y < fl; y += 26 * s) ctx.fillRect(-50, y, W + 100, 3 * s);
-  // окошко слева: ночь и снег
-  const wx = cx - 420 * s, wy = cy - 200 * s, ww = 110 * s, wh = 100 * s;
-  ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
-  const sky = ctx.createLinearGradient(0, wy, 0, wy + wh); sky.addColorStop(0, '#0d1830'); sky.addColorStop(1, '#2c405f'); ctx.fillStyle = sky; ctx.fillRect(wx, wy, ww, wh);
-  ctx.fillStyle = 'rgba(235,242,252,.8)'; for (let i = 0; i < 20; i++) ctx.fillRect(wx + (i * 37.7 + now / 50) % ww, wy + (i * 23.3 + now / 20 * (1 + i % 3)) % wh, 2, 2);
-  ctx.restore();
-  ctx.fillStyle = SIL; ctx.fillRect(wx + ww / 2 - 3 * s, wy, 6 * s, wh); ctx.fillRect(wx, wy + wh * .4 - 3 * s, ww, 6 * s);
-  ctx.lineWidth = 10 * s; ctx.strokeStyle = SIL; ctx.strokeRect(wx, wy, ww, wh);
-  // печь: силуэт, в топке огонь
-  ctx.fillStyle = '#0a0705'; ctx.fillRect(sx - 60 * s, cy - 190 * s, 260 * s, fl - cy + 190 * s);
-  const fx = sx - 30 * s, fy = fl - 130 * s;
-  ctx.fillStyle = `rgb(${200 + 55 * fire},${90 + 60 * fire},30)`; ctx.beginPath(); ctx.moveTo(fx, fy + 70 * s); ctx.lineTo(fx, fy + 24 * s); ctx.arc(fx + 44 * s, fy + 24 * s, 44 * s, Math.PI, 0); ctx.lineTo(fx + 88 * s, fy + 70 * s); ctx.fill();
-  ctx.fillStyle = '#0a0705'; for (let i = 0; i < 3; i++) ctx.fillRect(fx + (12 + i * 24) * s, fy + 52 * s, 20 * s, 18 * s);
-  glowAdd(fx + 44 * s, fy + 40 * s, 520 * s, '255,120,40', .3 * fire);
-  // лавка, бабушка (лицом влево) и мальчик в одеяле
-  const bx0 = cx - 260 * s, by = fl - 70 * s;
-  ctx.fillStyle = SIL; ctx.fillRect(bx0, by, 460 * s, 12 * s); ctx.fillRect(bx0 + 20 * s, by + 12 * s, 12 * s, 58 * s); ctx.fillRect(bx0 + 420 * s, by + 12 * s, 12 * s, 58 * s);
-  const gx = cx + 60 * s, gk = 1.55 * s, pat = Math.max(0, Math.sin(t * 2.2)) * 6;
-  ctx.save(); ctx.translate(gx, by - 40 * gk); ctx.scale(-1, 1);
-  ctx.save(); ctx.beginPath(); ctx.rect(-40 * gk, -30 * gk, 80 * gk, 70 * gk); ctx.clip();               // сидит: видна только верхняя часть фигуры
-  ctx.fillStyle = SIL; smoothShape(GR_BODY, 0, 0, gk); ctx.fill(); ctx.restore();
-  ctx.beginPath(); ctx.moveTo(-22 * gk, 40 * gk); ctx.lineTo(-22 * gk, 30 * gk); ctx.quadraticCurveTo(0, 26 * gk, 26 * gk, 31 * gk); ctx.lineTo(30 * gk, 40 * gk); ctx.fill();   // колени
-  ctx.beginPath(); ctx.moveTo(14 * gk, 38 * gk); ctx.lineTo(32 * gk, 38 * gk); ctx.lineTo(36 * gk, (40 + 70 / 1.55) * gk); ctx.lineTo(12 * gk, (40 + 70 / 1.55) * gk); ctx.fill();   // юбка до пола
-  ctx.save(); ctx.rotate(.12); smoothShape(GR_HEAD, 0, 0, gk); ctx.fill(); ctx.beginPath(); ctx.arc(5.5 * gk, 4.6 * gk, 2.3 * gk, 0, 7); ctx.fill(); ctx.restore();
-  ctx.strokeStyle = SIL; ctx.lineWidth = 6 * gk; ctx.lineCap = 'round';                                 // рука гладит мальчика по голове
-  ctx.beginPath(); ctx.moveTo(-2 * gk, 12 * gk); ctx.quadraticCurveTo(14 * gk, 18 * gk, (36 + pat * .3) * gk, (14 - pat) * gk); ctx.stroke(); ctx.lineCap = 'butt';
-  ctx.restore();
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,150,60,.5)'; ctx.lineWidth = 2 * s;   // контровой свет от печи по бабушке
-  ctx.translate(gx, by - 40 * gk); ctx.scale(-1, 1); ctx.beginPath(); ctx.rect(-40 * gk, -30 * gk, 80 * gk, 70 * gk); ctx.clip(); smoothShape(GR_BODY, 0, 0, gk); ctx.stroke(); ctx.restore();
-  const kx = cx - 30 * s, ky = by, br = Math.sin(now / 800) * 1.2 * s;                                  // мальчик, закутанный в одеяло, прижался к бабушке
-  ctx.fillStyle = SIL;
-  ctx.beginPath(); ctx.moveTo(kx - 34 * s, ky); ctx.quadraticCurveTo(kx - 38 * s, ky - 60 * s + br, kx - 4 * s, ky - 74 * s + br); ctx.quadraticCurveTo(kx + 30 * s, ky - 66 * s + br, kx + 34 * s, ky); ctx.fill();
-  ctx.beginPath(); ctx.arc(kx + 4 * s, ky - 86 * s + br, 15 * s, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255,170,80,.35)'; ctx.beginPath(); ctx.arc(kx + 10 * s, ky - 90 * s + br, 15 * s, -1.2, .9); ctx.lineTo(kx + 4 * s, ky - 86 * s + br); ctx.fill();   // огонь освещает щёку
-  ctx.fillStyle = SIL; ctx.beginPath(); ctx.arc(kx + 4 * s, ky - 86 * s + br, 13.5 * s, 0, 7); ctx.fill();
-  // пол и находки, разложенные перед печкой
-  const flG = ctx.createRadialGradient(sx - 60 * s, fl, 0, sx - 60 * s, fl, 800 * s);          // пол, освещённый печкой
-  flG.addColorStop(0, `rgb(${120 + 30 * fire},${70 + 15 * fire},34)`); flG.addColorStop(.6, '#2a1709'); flG.addColorStop(1, '#080503');
-  ctx.fillStyle = flG; ctx.fillRect(-50, fl, W + 100, H);
-  ctx.fillStyle = 'rgba(0,0,0,.25)'; for (let x = -50; x < W + 50; x += 70 * s) ctx.fillRect(x, fl, 2 * s, H);
-  const iy = fl + 24 * s, rim = `rgba(255,170,80,${.6 + .2 * fire})`;
-  const itemSil = (x, kind, ox) => {
-    ctx.save(); ctx.translate(x + ox, iy + ox * .3); ctx.scale(1.35, 1.35);
-    if (kind === 'mitten') { ctx.beginPath(); ctx.ellipse(0, -12 * s, 11 * s, 15 * s, -.2, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(10 * s, -10 * s, 4 * s, 7 * s, .6, 0, 7); ctx.fill(); ctx.fillRect(-10 * s, 0, 18 * s, 6 * s); }
-    if (kind === 'sled') { ctx.fillRect(-34 * s, -12 * s, 62 * s, 6 * s); ctx.lineWidth = 3 * s; ctx.strokeStyle = ctx.fillStyle; ctx.beginPath(); ctx.moveTo(-38 * s, 0); ctx.lineTo(28 * s, 0); ctx.quadraticCurveTo(40 * s, 0, 36 * s, -14 * s); ctx.stroke();
-      for (const lx of [-26, -4, 18]) ctx.fillRect(lx * s, -8 * s, 3 * s, 8 * s); }
-    if (kind === 'cone') { ctx.beginPath(); ctx.ellipse(0, -10 * s, 8 * s, 11 * s, .3, 0, 7); ctx.fill(); }
-    if (kind === 'coin') { ctx.beginPath(); ctx.ellipse(0, -3 * s, 7 * s, 3 * s, 0, 0, 7); ctx.fill(); }
-    if (kind === 'whistle') { ctx.fillRect(-12 * s, -8 * s, 18 * s, 8 * s); ctx.beginPath(); ctx.arc(6 * s, -4 * s, 6 * s, 0, 7); ctx.fill(); ctx.lineWidth = 1.5 * s; ctx.strokeStyle = ctx.fillStyle; ctx.beginPath(); ctx.arc(-16 * s, -4 * s, 4 * s, 0, 7); ctx.stroke(); }
-    ctx.restore();
-  };
-  const kinds = ['mitten', 'sled', 'cone', 'coin', 'whistle'];
-  kinds.forEach((k, i) => { const x = cx - 230 * s + i * 95 * s; ctx.fillStyle = rim; itemSil(x, k, 1.6 * s); ctx.fillStyle = SIL; itemSil(x, k, 0); });
-  glowAdd(cx - 230 * s + 3 * 95 * s, iy - 3 * s, 16 * s, '255,230,150', .5 + .4 * Math.sin(now / 200));   // монетка поблёскивает
-  for (const m of MOTES) {                                                                          // искры и пылинки в свете печи
-    const mx = sx - 120 * s + (m.x - .5) * 300 * s, my = fl - 80 * s - ((now / 30 + m.ph * 80) % (300 * s));
-    ctx.fillStyle = `rgba(255,190,110,${.35 * (1 - ((now / 30 + m.ph * 80) % (300 * s)) / (300 * s))})`; ctx.fillRect(mx + Math.sin(now / 600 + m.ph) * 8 * s, my, 2 * s, 2 * s);
-  }
-  ctx.restore(); vignette(.7);
-  if (t > 5.2) { ctx.fillStyle = `rgba(255,236,200,${Math.min(1, (t - 5.2) / 1.3)})`; ctx.fillRect(0, 0, W, H); }
-};
 const prints = [], breath = [];
 let breathT = 0, frost = null;
 // Иней по краям экрана: чем холоднее, тем сильнее
